@@ -55,7 +55,7 @@ export default function AdminLayout({ children, collapsed, setCollapsed }) {
           <div className="sidebar-logo-icon"><GraduationCap size={24} /></div>
           {!collapsed && (
             <div className="sidebar-logo-text">
-              <h1>Exam Portal</h1>
+              <h1>College Portal</h1>
               <p>Admin Portal</p>
             </div>
           )}
@@ -118,7 +118,7 @@ export default function AdminLayout({ children, collapsed, setCollapsed }) {
           </button>
           <div>
             <div className="header-title">{currentPage?.label || 'Admin Panel'}</div>
-            <div className="header-subtitle">Examination System • Anna University 2025</div>
+            <div className="header-subtitle">College ERP System • Anna University 2025</div>
           </div>
         </div>
 

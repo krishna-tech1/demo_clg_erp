@@ -50,7 +50,7 @@ export default function ReportsPage() {
     <div>
       <div className="page-header">
         <h2>Reports</h2>
-        <p>Generate and view examination performance reports</p>
+        <p>Generate and view college performance reports</p>
       </div>
 
       {/* Report Type Selection */}

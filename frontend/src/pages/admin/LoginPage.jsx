@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-logo">
           <div className="login-logo-icon"><GraduationCap size={40} /></div>
-          <h1>Examination System</h1>
+          <h1>College ERP System</h1>
           <p>Anna University Regulation 2025</p>
         </div>
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
             Admin Portal
           </p>
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-            Sign in to manage examination operations
+            Sign in to manage college operations
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
         </div>
 
         <p style={{ marginTop: '20px', fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'center' }}>
-          Department of Examinations • Version 1.0
+          College Administration • Version 1.0
         </p>
       </div>
     </div>

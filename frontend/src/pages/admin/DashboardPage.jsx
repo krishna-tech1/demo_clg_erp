@@ -42,7 +42,7 @@ export default function DashboardPage() {
     <div>
       <div className="page-header">
         <h2>Dashboard</h2>
-        <p>Overview of the Examination system</p>
+        <p>Overview of the College system</p>
       </div>
 
       {/* Stats Grid */}

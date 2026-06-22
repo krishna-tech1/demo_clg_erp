@@ -97,7 +97,7 @@ export default function MarksPage() {
     <div>
       <div className="page-header">
         <h2>Marks Management</h2>
-        <p>Enter internal (Model 1, Model 2) and external (University) examination marks</p>
+        <p>Enter internal (Model 1, Model 2) and external (University) college marks</p>
       </div>
 
       {/* Tabs */}

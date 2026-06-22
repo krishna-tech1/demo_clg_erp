@@ -57,7 +57,7 @@ export default function ExamSchedulePage() {
     <div>
       <div className="page-header">
         <h2>Exam Schedule Management</h2>
-        <p>Create and publish examination timetable</p>
+        <p>Create and publish college timetable</p>
       </div>
 
       <div className="page-actions">

@@ -122,7 +122,7 @@ export default function HallTicketsPage() {
             <div ref={printRef}>
               <div className="header" style={{ textAlign:'center', borderBottom:'2px solid var(--border-color)', paddingBottom:'16px', marginBottom:'20px' }}>
                 <h1 style={{ fontSize:'18px', fontWeight:'700', color:'var(--text-primary)' }}>
-                  EXAMINATION HALL TICKET
+                  COLLEGE HALL TICKET
                 </h1>
                 <h2 style={{ fontSize:'14px', color:'var(--text-secondary)', fontWeight:'400' }}>
                   Anna University – Regulation 2025
