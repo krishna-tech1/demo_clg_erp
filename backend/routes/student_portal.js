@@ -26,10 +26,10 @@ router.get('/profile', async (req, res) => {
     const subjects = await db.query(
       `SELECT sub.*, f.full_name AS teacher_name, f.email AS teacher_email
        FROM subjects sub
-       JOIN student_subjects ss ON ss.subject_id = sub.id
+       JOIN students s ON s.semester_id = sub.semester_id
        LEFT JOIN faculty_subjects fs ON fs.subject_id = sub.id
        LEFT JOIN faculty f ON fs.faculty_id = f.id
-       WHERE ss.student_id = $1`,
+       WHERE s.id = $1`,
       [req.student.id]
     );
 
