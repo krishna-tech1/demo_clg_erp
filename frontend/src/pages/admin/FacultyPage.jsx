@@ -49,6 +49,8 @@ export default function FacultyPage() {
     try {
       const data = await getFacultySubjectsForAdmin(f.id);
       setAssignedSubjects(data.subjects || []);
+      const allSubData = await getSubjects();
+      setAllSubjects(allSubData.subjects || []);
     } catch (err) {
       toast.error('Failed to load faculty subjects.');
     } finally {
@@ -64,6 +66,8 @@ export default function FacultyPage() {
       toast.success('Subject assigned successfully.');
       const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
       setAssignedSubjects(data.subjects || []);
+      const allSubData = await getSubjects();
+      setAllSubjects(allSubData.subjects || []);
       setSubjectToAssign('');
     } catch (err) {
       toast.error(err.message || 'Failed to assign subject.');
@@ -77,6 +81,8 @@ export default function FacultyPage() {
       toast.success('Subject unassigned successfully.');
       const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
       setAssignedSubjects(data.subjects || []);
+      const allSubData = await getSubjects();
+      setAllSubjects(allSubData.subjects || []);
     } catch (err) {
       toast.error(err.message || 'Failed to unassign subject.');
     }
@@ -270,6 +276,7 @@ export default function FacultyPage() {
             </form>
           </div>
         </div>
+      )}
       {showSubjectsModal && (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setShowSubjectsModal(false)}>
           <div className="modal" style={{ maxWidth: '600px' }}>
@@ -291,7 +298,7 @@ export default function FacultyPage() {
                   >
                     <option value="">-- Select Subject --</option>
                     {allSubjects
-                      .filter(sub => !assignedSubjects.some(as => as.id === sub.id))
+                      .filter(sub => !sub.is_assigned)
                       .map(sub => (
                         <option key={sub.id} value={sub.id}>
                           [{sub.subject_code}] {sub.subject_name} (Sem {sub.semester_number} - {sub.department_name})

@@ -110,10 +110,13 @@ router.get('/subjects', async (req, res) => {
     const sortOrder = (sort_order || 'asc').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
     const result = await db.query(
-      `SELECT sub.*, sem.semester_number, sem.academic_year, d.name AS department_name
+      `SELECT sub.*, sem.semester_number, sem.academic_year, d.name AS department_name,
+              (fs.id IS NOT NULL) AS is_assigned, f.full_name AS assigned_faculty_name
        FROM subjects sub
        LEFT JOIN semesters sem ON sub.semester_id=sem.id
        LEFT JOIN departments d ON sem.department_id=d.id
+       LEFT JOIN faculty_subjects fs ON fs.subject_id = sub.id
+       LEFT JOIN faculty f ON fs.faculty_id = f.id
        ${where} ORDER BY ${sortColumn} ${sortOrder}`,
       params
     );

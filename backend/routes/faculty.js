@@ -121,6 +121,8 @@ router.post('/:id/subjects', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to assign subject.' });
   }
+});
+
 // DELETE /api/admin/faculty/:id/subjects/:subjectId
 router.delete('/:id/subjects/:subjectId', async (req, res) => {
   try {

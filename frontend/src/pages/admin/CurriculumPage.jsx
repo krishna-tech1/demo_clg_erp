@@ -7,7 +7,7 @@ import {
 } from '../../api/admin';
 import { Plus, Building, Calendar, BookOpen, Edit, Trash2, X } from 'lucide-react';
 
-const TABS = ['Departments', 'Semesters', 'Subjects'];
+const TABS = ['Departments', 'Semesters'];
 
 export default function CurriculumPage() {
   const [tab, setTab] = useState('Departments');
@@ -15,6 +15,10 @@ export default function CurriculumPage() {
   const [semesters, setSemesters] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Drill-down selection states
+  const [selectedDeptId, setSelectedDeptId] = useState(null);
+  const [selectedSemId, setSelectedSemId] = useState(null);
 
   // Modals
   const [showDeptModal, setShowDeptModal] = useState(false);
@@ -71,7 +75,12 @@ export default function CurriculumPage() {
   };
   const delSem = async (id) => {
     if (!window.confirm('Delete this semester?')) return;
-    try { await deleteSemester(id); toast.success('Deleted.'); loadSems(); }
+    try { 
+      await deleteSemester(id); 
+      toast.success('Deleted.'); 
+      if (selectedSemId === id) setSelectedSemId(null);
+      loadSems(); 
+    }
     catch (err) { toast.error(err.message); }
   };
 
@@ -146,83 +155,183 @@ export default function CurriculumPage() {
         </div>
       )}
 
-      {/* Semesters Tab */}
+      {/* Semesters Tab (Drill-Down Explorer) */}
       {!loading && tab === 'Semesters' && (
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Semesters ({semesters.length})</div>
-            <button className="btn btn-primary" onClick={() => { setSemForm({department_id:'',semester_number:'',academic_year:'2025-2026',regulation:'2025'}); setShowSemModal(true); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><Plus size={16} /> Add Semester</button>
-          </div>
-          <div className="table-container">
-            {semesters.length === 0 ? (
-              <div className="empty-state"><div className="empty-state-icon"><Calendar size={32} /></div><h3>No semesters</h3></div>
-            ) : (
-              <table>
-                <thead><tr><th>#</th><th>Department</th><th>Semester</th><th>Academic Year</th><th>Regulation</th><th>Actions</th></tr></thead>
-                <tbody>
-                  {semesters.map((s, i) => (
-                    <tr key={s.id}>
-                      <td style={{ color:'var(--text-tertiary)' }}>{i+1}</td>
-                      <td><span className="badge badge-info">{s.department_name}</span></td>
-                      <td style={{ fontWeight:'600', color:'var(--brand-primary)' }}>Semester {s.semester_number}</td>
-                      <td style={{ color:'var(--text-secondary)' }}>{s.academic_year}</td>
-                      <td><span className="badge badge-purple">AU-{s.regulation}</span></td>
-                      <td><button className="btn btn-danger btn-sm" onClick={() => delSem(s.id)}><Trash2 size={14} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Subjects Tab */}
-      {!loading && tab === 'Subjects' && (
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Subjects ({subjects.length})</div>
-            <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
-              <select className="form-control" style={{ width:'140px' }} value={subSortBy} onChange={e => setSubSortBy(e.target.value)}>
-                <option value="subject_code">Subject Code</option>
-                <option value="subject_name">Subject Name</option>
-                <option value="credits">Credits</option>
-                <option value="subject_type">Type</option>
-              </select>
-              <select className="form-control" style={{ width:'130px' }} value={subSortOrder} onChange={e => setSubSortOrder(e.target.value)}>
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
-              <button className="btn btn-primary" onClick={() => { setEditingSub(null); setSubForm({semester_id:'',subject_code:'',subject_name:'',credits:3,subject_type:'theory'}); setShowSubModal(true); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><Plus size={16} /> Add Subject</button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: '20px', alignItems: 'stretch' }}>
+          {/* Column 1: Departments */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px' }}>
+              <div className="card-title" style={{ fontSize: '15px' }}>1. Departments ({departments.length})</div>
+            </div>
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '450px', overflowY: 'auto' }}>
+              {departments.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => {
+                    setSelectedDeptId(d.id);
+                    setSelectedSemId(null);
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    padding: '12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: selectedDeptId === d.id ? '1px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                    background: selectedDeptId === d.id ? 'var(--bg-active)' : 'var(--bg-surface)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <span className="badge badge-info" style={{ marginBottom: '6px' }}>{d.code}</span>
+                  <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-primary)' }}>{d.name}</span>
+                </button>
+              ))}
             </div>
           </div>
-          <div className="table-container">
-            {subjects.length === 0 ? (
-              <div className="empty-state"><div className="empty-state-icon"><BookOpen size={32} /></div><h3>No subjects</h3></div>
-            ) : (
-              <table>
-                <thead><tr><th>#</th><th>Code</th><th>Subject Name</th><th>Type</th><th>Credits</th><th>Semester</th><th>Department</th><th>Actions</th></tr></thead>
-                <tbody>
-                  {subjects.map((s, i) => (
-                    <tr key={s.id}>
-                      <td style={{ color:'var(--text-tertiary)' }}>{i+1}</td>
-                      <td><code style={{ fontSize:'12px', background:'var(--bg-surface-2)', padding:'2px 6px', borderRadius:'4px', color:'var(--brand-primary)' }}>{s.subject_code}</code></td>
-                      <td style={{ fontWeight:'500' }}>{s.subject_name}</td>
-                      <td><span className={`badge ${s.subject_type==='practical'?'badge-success':s.subject_type==='elective'?'badge-warning':'badge-info'}`}>{s.subject_type}</span></td>
-                      <td style={{ textAlign:'center', fontWeight:'600', color:'var(--brand-secondary)' }}>{s.credits}</td>
-                      <td style={{ color:'var(--text-secondary)' }}>Sem {s.semester_number}</td>
-                      <td style={{ color:'var(--text-tertiary)', fontSize:'12px' }}>{s.department_name}</td>
-                      <td>
-                        <div style={{ display:'flex', gap:'6px' }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => { setEditingSub(s); setSubForm({semester_id:s.semester_id,subject_code:s.subject_code,subject_name:s.subject_name,credits:s.credits,subject_type:s.subject_type}); setShowSubModal(true); }}><Edit size={14} /></button>
-                          <button className="btn btn-danger btn-sm" onClick={() => delSub(s.id, s.subject_code)}><Trash2 size={14} /></button>
+
+          {/* Column 2: Semesters */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="card-title" style={{ fontSize: '15px' }}>2. Semesters</div>
+              {selectedDeptId && (
+                <button 
+                  className="btn btn-primary btn-sm" 
+                  onClick={() => {
+                    setSemForm({ department_id: selectedDeptId.toString(), semester_number: '', academic_year: '2025-2026', regulation: '2025' });
+                    setShowSemModal(true);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus size={12} /> Add
+                </button>
+              )}
+            </div>
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '450px', overflowY: 'auto' }}>
+              {!selectedDeptId ? (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Select a department to view semesters.</p>
+              ) : semesters.filter(s => s.department_id === selectedDeptId).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', marginBottom: '10px' }}>No semesters found.</p>
+                </div>
+              ) : (
+                semesters
+                  .filter(s => s.department_id === selectedDeptId)
+                  .map(s => (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedSemId(s.id)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: selectedSemId === s.id ? '1px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                        background: selectedSemId === s.id ? 'var(--bg-active)' : 'var(--bg-surface)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-primary)' }}>Semester {s.semester_number}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Regulation: {s.regulation} | {s.academic_year}</div>
+                      </div>
+                      <button 
+                        className="btn btn-danger btn-sm"
+                        style={{ padding: '4px 6px' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          delSem(s.id);
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+
+          {/* Column 3: Subjects */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="card-title" style={{ fontSize: '15px' }}>3. Subjects</div>
+              {selectedSemId && (
+                <button 
+                  className="btn btn-primary btn-sm" 
+                  onClick={() => {
+                    setEditingSub(null);
+                    setSubForm({ semester_id: selectedSemId.toString(), subject_code: '', subject_name: '', credits: 3, subject_type: 'theory' });
+                    setShowSubModal(true);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus size={12} /> Add
+                </button>
+              )}
+            </div>
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '450px', overflowY: 'auto' }}>
+              {!selectedSemId ? (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Select a semester to view subjects.</p>
+              ) : subjects.filter(sub => sub.semester_id === selectedSemId).length === 0 ? (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>No subjects found.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {subjects
+                    .filter(sub => sub.semester_id === selectedSemId)
+                    .map(sub => (
+                      <div
+                        key={sub.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px',
+                          background: 'var(--bg-surface-2)',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-color)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <code style={{ fontSize: '11px', background: 'var(--bg-surface)', padding: '2px 6px', borderRadius: '4px', color: 'var(--brand-primary)', fontWeight: '600' }}>
+                              {sub.subject_code}
+                            </code>
+                            <span className={`badge ${sub.subject_type === 'practical' ? 'badge-success' : sub.subject_type === 'elective' ? 'badge-warning' : 'badge-info'}`} style={{ fontSize: '9px', padding: '2px 6px' }}>
+                              {sub.subject_type}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>{sub.subject_name}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Credits: {sub.credits}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '4px 6px' }}
+                            onClick={() => {
+                              setEditingSub(sub);
+                              setSubForm({ semester_id: sub.semester_id, subject_code: sub.subject_code, subject_name: sub.subject_name, credits: sub.credits, subject_type: sub.subject_type });
+                              setShowSubModal(true);
+                            }}
+                          >
+                            <Edit size={12} />
+                          </button>
+                          <button 
+                            className="btn btn-danger btn-sm" 
+                            style={{ padding: '4px 6px' }}
+                            onClick={() => delSub(sub.id, sub.subject_code)}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
