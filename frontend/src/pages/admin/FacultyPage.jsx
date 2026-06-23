@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { getFaculty, createFaculty, updateFaculty, deleteFaculty, getDepartments } from '../../api/admin';
-import { Search, UserPlus, Users, Edit, Trash2, X } from 'lucide-react';
+import { getFaculty, createFaculty, updateFaculty, deleteFaculty, getDepartments, getFacultySubjectsForAdmin, assignSubjectToFaculty, unassignSubjectFromFaculty, getSubjects } from '../../api/admin';
+import { Search, UserPlus, Users, Edit, Trash2, X, BookOpen, Plus } from 'lucide-react';
 
 export default function FacultyPage() {
   const [faculty, setFaculty] = useState([]);
@@ -16,6 +16,14 @@ export default function FacultyPage() {
   const [form, setForm] = useState({ faculty_id:'', full_name:'', email:'', password:'', department_id:'', designation:'' });
   const [saving, setSaving] = useState(false);
 
+  // Subject assignment states
+  const [showSubjectsModal, setShowSubjectsModal] = useState(false);
+  const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [assignedSubjects, setAssignedSubjects] = useState([]);
+  const [allSubjects, setAllSubjects] = useState([]);
+  const [subjectToAssign, setSubjectToAssign] = useState('');
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
+
   const load = useCallback(() => {
     setLoading(true);
     const params = { sort_by: sortBy, sort_order: sortOrder };
@@ -28,7 +36,51 @@ export default function FacultyPage() {
   }, [search, filterDept, sortBy, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { getDepartments().then(d => setDepartments(d.departments)); }, []);
+  useEffect(() => { 
+    getDepartments().then(d => setDepartments(d.departments)); 
+    getSubjects().then(d => setAllSubjects(d.subjects || []));
+  }, []);
+
+  const openManageSubjects = async (f) => {
+    setSelectedFaculty(f);
+    setSubjectsLoading(true);
+    setShowSubjectsModal(true);
+    setSubjectToAssign('');
+    try {
+      const data = await getFacultySubjectsForAdmin(f.id);
+      setAssignedSubjects(data.subjects || []);
+    } catch (err) {
+      toast.error('Failed to load faculty subjects.');
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
+
+  const handleAssignSubject = async (e) => {
+    e.preventDefault();
+    if (!subjectToAssign) return;
+    try {
+      await assignSubjectToFaculty(selectedFaculty.id, parseInt(subjectToAssign));
+      toast.success('Subject assigned successfully.');
+      const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
+      setAssignedSubjects(data.subjects || []);
+      setSubjectToAssign('');
+    } catch (err) {
+      toast.error(err.message || 'Failed to assign subject.');
+    }
+  };
+
+  const handleUnassignSubject = async (subjectId) => {
+    if (!window.confirm('Are you sure you want to unassign this subject?')) return;
+    try {
+      await unassignSubjectFromFaculty(selectedFaculty.id, subjectId);
+      toast.success('Subject unassigned successfully.');
+      const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
+      setAssignedSubjects(data.subjects || []);
+    } catch (err) {
+      toast.error(err.message || 'Failed to unassign subject.');
+    }
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -150,8 +202,9 @@ export default function FacultyPage() {
                     <td style={{ color:'var(--text-secondary)', fontSize:'12px' }}>{f.email}</td>
                     <td>
                       <div style={{ display:'flex', gap:'6px' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => openEdit(f)}><Edit size={14} /></button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(f.id, f.full_name)}><Trash2 size={14} /></button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => openEdit(f)} title="Edit Profile"><Edit size={14} /></button>
+                        <button className="btn btn-info btn-sm" style={{ display:'flex', alignItems:'center', gap:'4px' }} onClick={() => openManageSubjects(f)} title="Manage Subjects"><BookOpen size={14} /> Subjects</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(f.id, f.full_name)} title="Delete Faculty"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -215,6 +268,85 @@ export default function FacultyPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      {showSubjectsModal && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setShowSubjectsModal(false)}>
+          <div className="modal" style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <BookOpen size={18} /> Manage Subjects: {selectedFaculty?.full_name}
+              </h3>
+              <button className="btn-icon" onClick={() => setShowSubjectsModal(false)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleAssignSubject} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Assign New Subject</label>
+                  <select 
+                    className="form-control" 
+                    value={subjectToAssign} 
+                    onChange={e => setSubjectToAssign(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select Subject --</option>
+                    {allSubjects
+                      .filter(sub => !assignedSubjects.some(as => as.id === sub.id))
+                      .map(sub => (
+                        <option key={sub.id} value={sub.id}>
+                          [{sub.subject_code}] {sub.subject_name} (Sem {sub.semester_number} - {sub.department_name})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '42px' }}>
+                  <Plus size={16} /> Assign
+                </button>
+              </form>
+
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-primary)' }}>Assigned Subjects</h4>
+              {subjectsLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                  <span className="spinner"></span>
+                </div>
+              ) : assignedSubjects.length === 0 ? (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>No subjects assigned to this faculty member yet.</p>
+              ) : (
+                <div className="table-container" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>Subject Name</th>
+                        <th>Sem</th>
+                        <th style={{ textAlign: 'right' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignedSubjects.map(sub => (
+                        <tr key={sub.id}>
+                          <td><code style={{ fontSize: '11px', background: 'var(--bg-surface-2)', padding: '2px 6px', borderRadius: '4px', color: 'var(--brand-primary)' }}>{sub.subject_code}</code></td>
+                          <td style={{ fontWeight: '500', fontSize: '13px' }}>{sub.subject_name}</td>
+                          <td style={{ fontSize: '13px' }}>Sem {sub.semester_number}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button 
+                              type="button" 
+                              className="btn btn-danger btn-sm" 
+                              onClick={() => handleUnassignSubject(sub.id)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowSubjectsModal(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}

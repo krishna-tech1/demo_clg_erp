@@ -105,13 +105,24 @@ export default function StudentDashboard() {
                     }}
                   >
                     <div>
-                      <span className="badge badge-purple" style={{ marginBottom: '8px' }}>{subject.subject_code}</span>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span className="badge badge-purple" style={{ marginBottom: '8px' }}>{subject.subject_code}</span>
+                        <span className="badge badge-info" style={{ fontSize: '10px' }}>{subject.subject_type.toUpperCase()}</span>
+                      </div>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>
                         {subject.subject_name}
                       </h4>
+                      <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                        <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Assigned Instructor</p>
+                        <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>
+                          {subject.teacher_name || 'Not Assigned'}
+                        </p>
+                        {subject.teacher_email && (
+                          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{subject.teacher_email}</p>
+                        )}
+                      </div>
                     </div>
                     <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '12px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      <span>Type: {subject.subject_type.toUpperCase()}</span>
                       <span>Credits: {subject.credits}</span>
                     </div>
                   </div>

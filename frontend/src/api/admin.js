@@ -57,6 +57,12 @@ export const updateFaculty = (id, data) =>
   fetch(`${BASE_URL}/admin/faculty/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
 export const deleteFaculty = (id) =>
   fetch(`${BASE_URL}/admin/faculty/${id}`, { method: 'DELETE', headers: authHeaders() }).then(handleResponse);
+export const getFacultySubjectsForAdmin = (facultyId) =>
+  fetch(`${BASE_URL}/admin/faculty/${facultyId}/subjects`, { headers: authHeaders() }).then(handleResponse);
+export const assignSubjectToFaculty = (facultyId, subjectId) =>
+  fetch(`${BASE_URL}/admin/faculty/${facultyId}/subjects`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ subject_id: subjectId }) }).then(handleResponse);
+export const unassignSubjectFromFaculty = (facultyId, subjectId) =>
+  fetch(`${BASE_URL}/admin/faculty/${facultyId}/subjects/${subjectId}`, { method: 'DELETE', headers: authHeaders() }).then(handleResponse);
 
 // Curriculum
 export const getDepartments = () =>

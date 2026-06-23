@@ -121,6 +121,17 @@ router.post('/:id/subjects', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to assign subject.' });
   }
+// DELETE /api/admin/faculty/:id/subjects/:subjectId
+router.delete('/:id/subjects/:subjectId', async (req, res) => {
+  try {
+    await db.query(
+      'DELETE FROM faculty_subjects WHERE faculty_id = $1 AND subject_id = $2',
+      [req.params.id, req.params.subjectId]
+    );
+    res.json({ message: 'Subject unassigned from faculty.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unassign subject.' });
+  }
 });
 
 module.exports = router;

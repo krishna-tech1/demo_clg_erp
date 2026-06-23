@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getFacultySubjects, getFacultySubjectStudents, saveFacultyMarks } from '../../api/admin';
 import { toast } from 'react-hot-toast';
-import { Save, BookOpen } from 'lucide-react';
+import { Save, BookOpen, Search, ArrowUpDown } from 'lucide-react';
 
 export default function FacultyMarksEntry() {
   const location = useLocation();
@@ -12,6 +12,11 @@ export default function FacultyMarksEntry() {
   const [loading, setLoading] = useState(false);
   const [marksState, setMarksState] = useState({}); // studentId -> { model1, model2, practical }
   const [saving, setSaving] = useState(false);
+
+  // Search and Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('register_number');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => {
     getFacultySubjects()
@@ -82,6 +87,53 @@ export default function FacultyMarksEntry() {
     } finally {
       setSaving(false);
     }
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortedAndFilteredStudents = () => {
+    let filtered = students.filter(s => 
+      s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.register_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      let valA, valB;
+      if (sortBy === 'register_number') {
+        valA = a.register_number;
+        valB = b.register_number;
+      } else if (sortBy === 'full_name') {
+        valA = a.full_name.toLowerCase();
+        valB = b.full_name.toLowerCase();
+      } else if (sortBy === 'model1') {
+        valA = marksState[a.student_id]?.model1 ?? 0;
+        valB = marksState[b.student_id]?.model1 ?? 0;
+      } else if (sortBy === 'model2') {
+        valA = marksState[a.student_id]?.model2 ?? 0;
+        valB = marksState[b.student_id]?.model2 ?? 0;
+      } else if (sortBy === 'practical') {
+        valA = marksState[a.student_id]?.practical ?? 0;
+        valB = marksState[b.student_id]?.practical ?? 0;
+      } else if (sortBy === 'internal') {
+        const bestA = Math.max(marksState[a.student_id]?.model1 ?? 0, marksState[a.student_id]?.model2 ?? 0);
+        valA = ((bestA / 100.0) * 40);
+        const bestB = Math.max(marksState[b.student_id]?.model1 ?? 0, marksState[b.student_id]?.model2 ?? 0);
+        valB = ((bestB / 100.0) * 40);
+      } else {
+        return 0;
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
   };
 
   const selectedSubjectInfo = subjects.find(s => s.id.toString() === selectedSubjectId.toString());
@@ -138,21 +190,57 @@ export default function FacultyMarksEntry() {
         </div>
       ) : selectedSubjectId ? (
         <div className="card">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
+            <span className="card-title">Enrolled Students ({getSortedAndFilteredStudents().length})</span>
+            <div className="search-bar" style={{ maxWidth: '300px', margin: 0 }}>
+              <span className="search-icon"><Search size={16} /></span>
+              <input 
+                className="form-control" 
+                placeholder="Search name or reg no..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+              />
+            </div>
+          </div>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Reg Number</th>
-                  <th>Student Name</th>
-                  <th>Model Exam 1 (100)</th>
-                  <th>Model Exam 2 (100)</th>
-                  <th>Practical (100)</th>
-                  <th>Calc Internal (40)</th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('register_number')}>
+                      Reg Number <ArrowUpDown size={12} style={{ opacity: sortBy === 'register_number' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('full_name')}>
+                      Student Name <ArrowUpDown size={12} style={{ opacity: sortBy === 'full_name' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('model1')}>
+                      Model Exam 1 (100) <ArrowUpDown size={12} style={{ opacity: sortBy === 'model1' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('model2')}>
+                      Model Exam 2 (100) <ArrowUpDown size={12} style={{ opacity: sortBy === 'model2' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('practical')}>
+                      Practical (100) <ArrowUpDown size={12} style={{ opacity: sortBy === 'practical' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('internal')}>
+                      Calc Internal (40) <ArrowUpDown size={12} style={{ opacity: sortBy === 'internal' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map(s => {
+                {getSortedAndFilteredStudents().map(s => {
                   const studentMarks = marksState[s.student_id] || { model1: 0, model2: 0, practical: 0 };
                   const internalVal = calculateLocalInternal(studentMarks.model1, studentMarks.model2);
                   return (
