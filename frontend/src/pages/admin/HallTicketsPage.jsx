@@ -11,10 +11,13 @@ export default function HallTicketsPage() {
   const [loadingTicket, setLoadingTicket] = useState(false);
   const printRef = useRef();
 
+  const [sortBy, setSortBy] = useState('register_number');
+  const [sortOrder, setSortOrder] = useState('asc');
+
   const searchStudents = () => {
     if (!search.trim()) return toast.error('Enter a name or register number.');
     setLoading(true);
-    getStudents({ search, limit: 20 })
+    getStudents({ search, limit: 20, sort_by: sortBy, sort_order: sortOrder })
       .then(d => setStudents(d.students))
       .catch(() => toast.error('Search failed.'))
       .finally(() => setLoading(false));
@@ -69,7 +72,7 @@ export default function HallTicketsPage() {
 
       <div className="card" style={{ marginBottom:'20px' }}>
         <div className="card-body">
-          <div style={{ display:'flex', gap:'12px' }}>
+          <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
             <div className="search-bar" style={{ flex:1 }}>
               <span className="search-icon"><Search size={16} /></span>
               <input
@@ -80,6 +83,14 @@ export default function HallTicketsPage() {
                 onKeyDown={e => e.key === 'Enter' && searchStudents()}
               />
             </div>
+            <select className="form-control" style={{ width:'140px' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="register_number">Register No.</option>
+              <option value="full_name">Student Name</option>
+            </select>
+            <select className="form-control" style={{ width:'130px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
             <button className="btn btn-primary" onClick={searchStudents} disabled={loading} style={{display:'flex', alignItems:'center', gap:'6px'}}>
               {loading ? 'Searching...' : <><Search size={16} /> Search</>}
             </button>

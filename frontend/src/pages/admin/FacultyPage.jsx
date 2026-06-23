@@ -9,6 +9,8 @@ export default function FacultyPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterDept, setFilterDept] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ faculty_id:'', full_name:'', email:'', password:'', department_id:'', designation:'' });
@@ -16,14 +18,14 @@ export default function FacultyPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    const params = {};
+    const params = { sort_by: sortBy, sort_order: sortOrder };
     if (search) params.search = search;
     if (filterDept) params.department_id = filterDept;
     getFaculty(params)
       .then(d => setFaculty(d.faculty))
       .catch(() => toast.error('Failed to load faculty.'))
       .finally(() => setLoading(false));
-  }, [search, filterDept]);
+  }, [search, filterDept, sortBy, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { getDepartments().then(d => setDepartments(d.departments)); }, []);
@@ -90,6 +92,17 @@ export default function FacultyPage() {
             <select className="form-control" style={{ width:'180px' }} value={filterDept} onChange={e => setFilterDept(e.target.value)}>
               <option value="">All Departments</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.code}</option>)}
+            </select>
+            <select className="form-control" style={{ width:'150px' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="created_at">Date Added</option>
+              <option value="full_name">Name</option>
+              <option value="faculty_id">Faculty ID</option>
+              <option value="department_name">Department</option>
+              <option value="designation">Designation</option>
+            </select>
+            <select className="form-control" style={{ width:'130px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
             </select>
           </div>
           <button id="add-faculty-btn" className="btn btn-primary" onClick={openAdd} style={{display:'flex', alignItems:'center', gap:'6px'}}>

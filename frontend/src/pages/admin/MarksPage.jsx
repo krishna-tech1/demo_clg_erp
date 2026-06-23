@@ -14,6 +14,9 @@ export default function MarksPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [computing, setComputing] = useState(false);
+  
+  const [sortBy, setSortBy] = useState('register_number');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => { getSubjects().then(d => setSubjects(d.subjects)); }, []);
 
@@ -21,7 +24,7 @@ export default function MarksPage() {
     if (!selectedSubject) return;
     setLoading(true);
     const params = { subject_id: selectedSubject };
-    const fetchStudents = getStudents({ limit: 100 });
+    const fetchStudents = getStudents({ limit: 100, sort_by: sortBy, sort_order: sortOrder });
     const fetchMarks = tab === 'Internal Marks' ? getInternalMarks(params) : getExternalMarks(params);
 
     Promise.all([fetchStudents, fetchMarks]).then(([sd, md]) => {
@@ -34,7 +37,7 @@ export default function MarksPage() {
       setMarksData(map);
     }).catch(() => toast.error('Failed to load.'))
     .finally(() => setLoading(false));
-  }, [selectedSubject, tab]);
+  }, [selectedSubject, tab, sortBy, sortOrder]);
 
   const updateMark = (studentId, field, value) => {
     setMarksData(prev => ({
@@ -175,8 +178,20 @@ export default function MarksPage() {
       ) : (
         <div className="card">
           <div className="card-header">
-            <div className="card-title">{tab} Entry – {subjects.find(s=>s.id==selectedSubject)?.subject_name}</div>
-            <span style={{ fontSize:'12px', color:'var(--text-tertiary)' }}>{students.length} students</span>
+            <div>
+              <div className="card-title">{tab} Entry – {subjects.find(s=>s.id==selectedSubject)?.subject_name}</div>
+              <span style={{ fontSize:'12px', color:'var(--text-tertiary)' }}>{students.length} students</span>
+            </div>
+            <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
+              <select className="form-control" style={{ width:'140px' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="register_number">Register No.</option>
+                <option value="full_name">Student Name</option>
+              </select>
+              <select className="form-control" style={{ width:'130px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
           </div>
           <div className="table-container">
             <table>

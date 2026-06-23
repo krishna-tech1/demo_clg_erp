@@ -14,6 +14,8 @@ export default function ResultsPage() {
   const [filterSubject, setFilterSubject] = useState('');
   const [filterSem, setFilterSem] = useState('');
   const [filterPublished, setFilterPublished] = useState('');
+  const [sortBy, setSortBy] = useState('register_number');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -22,12 +24,12 @@ export default function ResultsPage() {
     getSemesters().then(d => setSemesters(d.semesters));
   }, []);
 
-  useEffect(() => { loadResults(); }, [filterSubject, filterSem, filterPublished]);
+  useEffect(() => { loadResults(); }, [filterSubject, filterSem, filterPublished, sortBy, sortOrder]);
   useEffect(() => { if (tab === 'Summary') loadSummary(); }, [tab, filterSem]);
 
   const loadResults = () => {
     setLoading(true);
-    const params = {};
+    const params = { sort_by: sortBy, sort_order: sortOrder };
     if (filterSubject) params.subject_id = filterSubject;
     if (filterSem) params.semester_id = filterSem;
     if (filterPublished !== '') params.is_published = filterPublished;
@@ -102,6 +104,21 @@ export default function ResultsPage() {
               <option value="">All</option>
               <option value="false">Pending</option>
               <option value="true">Published</option>
+            </select>
+          </div>
+          <div style={{ flex:1, minWidth:'150px' }}>
+            <label className="form-label">Sort By</label>
+            <select className="form-control" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="register_number">Register No.</option>
+              <option value="full_name">Student Name</option>
+              <option value="final_score">Total Score</option>
+            </select>
+          </div>
+          <div style={{ flex:1, minWidth:'130px' }}>
+            <label className="form-label">Order</label>
+            <select className="form-control" value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </div>
           <button className="btn btn-success" onClick={handlePublish} disabled={publishing} style={{display:'flex', alignItems:'center', gap:'6px'}}>

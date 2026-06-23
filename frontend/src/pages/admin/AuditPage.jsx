@@ -28,17 +28,19 @@ export default function AuditPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filterAction, setFilterAction] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const LIMIT = 25;
 
   const load = useCallback(() => {
     setLoading(true);
-    const params = { page, limit: LIMIT };
+    const params = { page, limit: LIMIT, sort_by: sortBy, sort_order: sortOrder };
     if (filterAction) params.action = filterAction;
     getAuditLogs(params)
       .then(d => { setLogs(d.logs); setTotal(d.total); })
       .catch(() => toast.error('Failed to load audit logs.'))
       .finally(() => setLoading(false));
-  }, [page, filterAction]);
+  }, [page, filterAction, sortBy, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -95,6 +97,14 @@ export default function AuditPage() {
             <select className="form-control" style={{ width:'200px' }} value={filterAction} onChange={e => { setFilterAction(e.target.value); setPage(1); }}>
               <option value="">All Actions</option>
               {Object.keys(ACTION_COLORS).map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <select className="form-control" style={{ width:'150px' }} value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1); }}>
+              <option value="created_at">Timestamp</option>
+              <option value="action">Action</option>
+            </select>
+            <select className="form-control" style={{ width:'130px' }} value={sortOrder} onChange={e => { setSortOrder(e.target.value); setPage(1); }}>
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
             </select>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={load} style={{display:'flex', alignItems:'center', gap:'6px'}}><RefreshCw size={14} /> Refresh</button>

@@ -18,7 +18,7 @@ const logAudit = async (adminId, action, entityType, entityId, details) => {
 // GET /api/admin/students
 router.get('/', async (req, res) => {
   try {
-    const { search, department_id, semester_id, page = 1, limit = 20 } = req.query;
+    const { search, department_id, semester_id, sort_by, sort_order, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     let where = 'WHERE 1=1';
     const params = [];
@@ -26,6 +26,15 @@ router.get('/', async (req, res) => {
     if (search) { where += ` AND (s.full_name ILIKE $${idx} OR s.register_number ILIKE $${idx})`; params.push(`%${search}%`); idx++; }
     if (department_id) { where += ` AND s.department_id = $${idx}`; params.push(department_id); idx++; }
     if (semester_id) { where += ` AND s.semester_id = $${idx}`; params.push(semester_id); idx++; }
+
+    const validSortColumns = {
+      'full_name': 's.full_name',
+      'register_number': 's.register_number',
+      'created_at': 's.created_at',
+      'department_name': 'd.name'
+    };
+    const sortColumn = validSortColumns[sort_by] || 's.created_at';
+    const sortOrder = (sort_order || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     const countResult = await db.query(
       `SELECT COUNT(*) FROM students s ${where}`, params
@@ -37,7 +46,7 @@ router.get('/', async (req, res) => {
        FROM students s
        LEFT JOIN departments d ON s.department_id = d.id
        LEFT JOIN semesters sem ON s.semester_id = sem.id
-       ${where} ORDER BY s.created_at DESC LIMIT $${idx} OFFSET $${idx+1}`,
+       ${where} ORDER BY ${sortColumn} ${sortOrder} LIMIT $${idx} OFFSET $${idx+1}`,
       params
     );
     res.json({ students: result.rows, total: parseInt(countResult.rows[0].count), page: parseInt(page), limit: parseInt(limit) });

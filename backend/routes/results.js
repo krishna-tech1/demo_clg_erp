@@ -17,13 +17,21 @@ const logAudit = async (adminId, action, entityType, entityId, details) => {
 // GET /api/admin/results
 router.get('/', async (req, res) => {
   try {
-    const { subject_id, semester_id, is_published } = req.query;
+    const { subject_id, semester_id, is_published, sort_by, sort_order } = req.query;
     let where = 'WHERE 1=1';
     const params = [];
     let idx = 1;
     if (subject_id) { where += ` AND r.subject_id=$${idx}`; params.push(subject_id); idx++; }
     if (semester_id) { where += ` AND sem.id=$${idx}`; params.push(semester_id); idx++; }
     if (is_published !== undefined) { where += ` AND r.is_published=$${idx}`; params.push(is_published === 'true'); idx++; }
+
+    const validSortColumns = {
+      'register_number': 's.register_number',
+      'full_name': 's.full_name',
+      'final_score': 'r.final_score'
+    };
+    const sortColumn = validSortColumns[sort_by] || 's.register_number';
+    const sortOrder = (sort_order || 'asc').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
     const result = await db.query(
       `SELECT r.*, s.full_name AS student_name, s.register_number,
@@ -33,7 +41,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN subjects sub ON r.subject_id=sub.id
        LEFT JOIN semesters sem ON sub.semester_id=sem.id
        LEFT JOIN departments d ON sem.department_id=d.id
-       ${where} ORDER BY s.register_number`,
+       ${where} ORDER BY ${sortColumn} ${sortOrder}`,
       params
     );
     res.json({ results: result.rows });

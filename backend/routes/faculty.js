@@ -18,18 +18,28 @@ const logAudit = async (adminId, action, entityType, entityId, details) => {
 // GET /api/admin/faculty
 router.get('/', async (req, res) => {
   try {
-    const { search, department_id } = req.query;
+    const { search, department_id, sort_by, sort_order } = req.query;
     let where = 'WHERE 1=1';
     const params = [];
     let idx = 1;
     if (search) { where += ` AND (f.full_name ILIKE $${idx} OR f.faculty_id ILIKE $${idx})`; params.push(`%${search}%`); idx++; }
     if (department_id) { where += ` AND f.department_id = $${idx}`; params.push(department_id); idx++; }
 
+    const validSortColumns = {
+      'full_name': 'f.full_name',
+      'faculty_id': 'f.faculty_id',
+      'created_at': 'f.created_at',
+      'department_name': 'd.name',
+      'designation': 'f.designation'
+    };
+    const sortColumn = validSortColumns[sort_by] || 'f.created_at';
+    const sortOrder = (sort_order || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     const result = await db.query(
       `SELECT f.*, d.name AS department_name
        FROM faculty f
        LEFT JOIN departments d ON f.department_id = d.id
-       ${where} ORDER BY f.created_at DESC`,
+       ${where} ORDER BY ${sortColumn} ${sortOrder}`,
       params
     );
     res.json({ faculty: result.rows });

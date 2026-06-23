@@ -27,10 +27,19 @@ export default function CurriculumPage() {
   const [semForm, setSemForm] = useState({ department_id:'', semester_number:'', academic_year:'2025-2026', regulation:'2025' });
   const [subForm, setSubForm] = useState({ semester_id:'', subject_code:'', subject_name:'', credits:3, subject_type:'theory' });
   const [saving, setSaving] = useState(false);
+  
+  const [subSortBy, setSubSortBy] = useState('subject_code');
+  const [subSortOrder, setSubSortOrder] = useState('asc');
 
   const loadDepts = () => getDepartments().then(d => setDepartments(d.departments));
   const loadSems = () => getSemesters().then(d => setSemesters(d.semesters));
-  const loadSubs = () => getSubjects().then(d => setSubjects(d.subjects));
+  const loadSubs = () => getSubjects({ sort_by: subSortBy, sort_order: subSortOrder }).then(d => setSubjects(d.subjects));
+
+  useEffect(() => {
+    if (tab === 'Subjects') {
+      loadSubs();
+    }
+  }, [subSortBy, subSortOrder]);
 
   useEffect(() => {
     setLoading(true);
@@ -173,7 +182,19 @@ export default function CurriculumPage() {
         <div className="card">
           <div className="card-header">
             <div className="card-title">Subjects ({subjects.length})</div>
-            <button className="btn btn-primary" onClick={() => { setEditingSub(null); setSubForm({semester_id:'',subject_code:'',subject_name:'',credits:3,subject_type:'theory'}); setShowSubModal(true); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><Plus size={16} /> Add Subject</button>
+            <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
+              <select className="form-control" style={{ width:'140px' }} value={subSortBy} onChange={e => setSubSortBy(e.target.value)}>
+                <option value="subject_code">Subject Code</option>
+                <option value="subject_name">Subject Name</option>
+                <option value="credits">Credits</option>
+                <option value="subject_type">Type</option>
+              </select>
+              <select className="form-control" style={{ width:'130px' }} value={subSortOrder} onChange={e => setSubSortOrder(e.target.value)}>
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+              <button className="btn btn-primary" onClick={() => { setEditingSub(null); setSubForm({semester_id:'',subject_code:'',subject_name:'',credits:3,subject_type:'theory'}); setShowSubModal(true); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><Plus size={16} /> Add Subject</button>
+            </div>
           </div>
           <div className="table-container">
             {subjects.length === 0 ? (

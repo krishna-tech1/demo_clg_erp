@@ -93,19 +93,28 @@ router.delete('/semesters/:id', async (req, res) => {
 // ---- SUBJECTS ----
 router.get('/subjects', async (req, res) => {
   try {
-    const { semester_id, department_id } = req.query;
+    const { semester_id, department_id, sort_by, sort_order } = req.query;
     let where = 'WHERE 1=1';
     const params = [];
     let idx = 1;
     if (semester_id) { where += ` AND sub.semester_id=$${idx}`; params.push(semester_id); idx++; }
     if (department_id) { where += ` AND sem.department_id=$${idx}`; params.push(department_id); idx++; }
 
+    const validSortColumns = {
+      'subject_code': 'sub.subject_code',
+      'subject_name': 'sub.subject_name',
+      'credits': 'sub.credits',
+      'subject_type': 'sub.subject_type'
+    };
+    const sortColumn = validSortColumns[sort_by] || 'sub.subject_code';
+    const sortOrder = (sort_order || 'asc').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
     const result = await db.query(
       `SELECT sub.*, sem.semester_number, sem.academic_year, d.name AS department_name
        FROM subjects sub
        LEFT JOIN semesters sem ON sub.semester_id=sem.id
        LEFT JOIN departments d ON sem.department_id=d.id
-       ${where} ORDER BY sub.subject_code`,
+       ${where} ORDER BY ${sortColumn} ${sortOrder}`,
       params
     );
     res.json({ subjects: result.rows });
