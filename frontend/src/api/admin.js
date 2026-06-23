@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 
-const getToken = () => localStorage.getItem('app_admin_token');
+const getToken = () => localStorage.getItem('app_user_token') || localStorage.getItem('app_admin_token');
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -21,6 +21,14 @@ export const adminLogin = (username, password) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   }).then(handleResponse);
+
+export const userLogin = (username, password, role) =>
+  fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, role }),
+  }).then(handleResponse);
+
 
 // Dashboard
 export const getDashboardStats = () =>
@@ -147,3 +155,39 @@ export const getAuditLogs = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return fetch(`${BASE_URL}/admin/audit?${qs}`, { headers: authHeaders() }).then(handleResponse);
 };
+
+// Faculty Portal API calls
+export const getFacultySubjects = () =>
+  fetch(`${BASE_URL}/faculty/subjects`, { headers: authHeaders() }).then(handleResponse);
+
+export const getFacultySubjectStudents = (subjectId) =>
+  fetch(`${BASE_URL}/faculty/subjects/${subjectId}/students`, { headers: authHeaders() }).then(handleResponse);
+
+export const saveFacultyMarks = (data) =>
+  fetch(`${BASE_URL}/faculty/marks`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+export const getFacultySubjectCos = (subjectId) =>
+  fetch(`${BASE_URL}/faculty/subjects/${subjectId}/cos`, { headers: authHeaders() }).then(handleResponse);
+
+export const saveFacultyCo = (data) =>
+  fetch(`${BASE_URL}/faculty/cos`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+export const getFacultySubjectCoPo = (subjectId) =>
+  fetch(`${BASE_URL}/faculty/subjects/${subjectId}/co-po`, { headers: authHeaders() }).then(handleResponse);
+
+export const saveFacultyCoPo = (data) =>
+  fetch(`${BASE_URL}/faculty/co-po`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+export const getFacultyObeReports = () =>
+  fetch(`${BASE_URL}/faculty/obe/attainment`, { headers: authHeaders() }).then(handleResponse);
+
+// Student Portal API calls
+export const getStudentProfile = () =>
+  fetch(`${BASE_URL}/student/profile`, { headers: authHeaders() }).then(handleResponse);
+
+export const getStudentHallTicket = () =>
+  fetch(`${BASE_URL}/student/hall-ticket`, { headers: authHeaders() }).then(handleResponse);
+
+export const getStudentResults = () =>
+  fetch(`${BASE_URL}/student/results`, { headers: authHeaders() }).then(handleResponse);
+

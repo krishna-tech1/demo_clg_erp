@@ -38,6 +38,12 @@ app.use('/api/admin/results', require('./routes/results'));
 app.use('/api/admin/obe', require('./routes/obe'));
 app.use('/api/admin/audit', require('./routes/audit'));
 
+// Unified Auth & Role Portals
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/faculty', require('./routes/faculty_portal'));
+app.use('/api/student', require('./routes/student_portal'));
+
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🚀 Examination ERP Server running on port ${PORT}`);

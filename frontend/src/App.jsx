@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
+// Admin Imports
 import AdminLayout from './components/admin/AdminLayout';
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -19,11 +20,23 @@ import OBEPage from './pages/admin/OBEPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import AuditPage from './pages/admin/AuditPage';
 
+// Faculty Imports
+import FacultyLayout from './components/faculty/FacultyLayout';
+import FacultyDashboard from './pages/faculty/FacultyDashboard';
+import FacultyMarksEntry from './pages/faculty/FacultyMarksEntry';
+import FacultyObe from './pages/faculty/FacultyObe';
+
+// Student Imports
+import StudentLayout from './components/student/StudentLayout';
+import StudentDashboard from './pages/student/StudentDashboard';
+import StudentHallTicket from './pages/student/StudentHallTicket';
+import StudentResults from './pages/student/StudentResults';
+
 import './index.css';
 
-// Protected route wrapper
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+// Role-based Protected Route Wrapper
+function ProtectedRoute({ children, allowedRole }) {
+  const { isAuthenticated, user, loading } = useAuth();
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'var(--bg-app)' }}>
       <div style={{ textAlign:'center' }}>
@@ -32,11 +45,19 @@ function ProtectedRoute({ children }) {
       </div>
     </div>
   );
-  if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  
+  if (allowedRole && user?.role !== allowedRole) {
+    if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user?.role === 'faculty') return <Navigate to="/faculty/dashboard" replace />;
+    if (user?.role === 'student') return <Navigate to="/student/dashboard" replace />;
+    return <Navigate to="/login" replace />;
+  }
+  
   return children;
 }
 
-// Admin pages wrapper with layout
+// Admin Pages Layout Wrapper
 function AdminPages() {
   const [collapsed, setCollapsed] = useState(false);
   return (
@@ -56,6 +77,36 @@ function AdminPages() {
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>
     </AdminLayout>
+  );
+}
+
+// Faculty Pages Layout Wrapper
+function FacultyPages() {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <FacultyLayout collapsed={collapsed} setCollapsed={setCollapsed}>
+      <Routes>
+        <Route path="dashboard" element={<FacultyDashboard />} />
+        <Route path="marks" element={<FacultyMarksEntry />} />
+        <Route path="obe" element={<FacultyObe />} />
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
+      </Routes>
+    </FacultyLayout>
+  );
+}
+
+// Student Pages Layout Wrapper
+function StudentPages() {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <StudentLayout collapsed={collapsed} setCollapsed={setCollapsed}>
+      <Routes>
+        <Route path="dashboard" element={<StudentDashboard />} />
+        <Route path="hall-ticket" element={<StudentHallTicket />} />
+        <Route path="results" element={<StudentResults />} />
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
+      </Routes>
+    </StudentLayout>
   );
 }
 
@@ -81,17 +132,33 @@ export default function App() {
             }}
           />
           <Routes>
-            <Route path="/admin/login" element={<LoginPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+            
             <Route path="/admin/*" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="admin">
                 <AdminPages />
               </ProtectedRoute>
             } />
-            <Route path="/" element={<Navigate to="/admin/login" replace />} />
-            <Route path="*" element={<Navigate to="/admin/login" replace />} />
+            
+            <Route path="/faculty/*" element={
+              <ProtectedRoute allowedRole="faculty">
+                <FacultyPages />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/student/*" element={
+              <ProtectedRoute allowedRole="student">
+                <StudentPages />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   );
 }
+
