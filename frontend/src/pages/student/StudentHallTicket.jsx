@@ -40,26 +40,30 @@ export default function StudentHallTicket() {
       {/* Printable Area Styles */}
       <style>{`
         @media print {
-          body * {
-            visibility: hidden;
+          body {
             background: white !important;
             color: black !important;
           }
-          #printable-hall-ticket, #printable-hall-ticket * {
-            visibility: visible;
+          .sidebar, .admin-header, .no-print, header, aside, .theme-toggle {
+            display: none !important;
+          }
+          .admin-layout, .admin-main, .admin-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            transform: none !important;
           }
           #printable-hall-ticket {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            border: none !important;
+            border: 2px solid #1f2937 !important;
             box-shadow: none !important;
-            padding: 0px !important;
-            margin: 0px !important;
-          }
-          .no-print {
-            display: none !important;
+            padding: 20px !important;
+            margin: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
           }
         }
       `}</style>

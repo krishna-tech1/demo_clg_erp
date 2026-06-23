@@ -87,7 +87,9 @@ export default function FacultyMarksEntry() {
     } finally {
       setSaving(false);
     }
-    const handleSort = (column) => {
+  };
+
+  const handleSort = (column) => {
       if (sortBy === column) {
         setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
       } else {
@@ -308,4 +310,3 @@ export default function FacultyMarksEntry() {
       </div>
     );
   }
-}
