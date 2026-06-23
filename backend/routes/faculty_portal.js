@@ -53,11 +53,13 @@ router.get('/subjects/:subjectId/students', async (req, res) => {
 
     const students = await db.query(
       `SELECT s.id AS student_id, s.register_number, s.full_name, s.email,
-              im.model1_marks, im.model2_marks, im.practical_marks, im.internal_total
+              im.model1_marks, im.model2_marks, im.practical_marks, im.internal_total,
+              ex.marks_obtained AS external_marks_obtained
        FROM students s
-       JOIN student_subjects ss ON ss.student_id = s.id
+       JOIN subjects sub ON s.semester_id = sub.semester_id
        LEFT JOIN internal_marks im ON im.student_id = s.id AND im.subject_id = $1
-       WHERE ss.subject_id = $1
+       LEFT JOIN external_marks ex ON ex.student_id = s.id AND ex.subject_id = $1
+       WHERE sub.id = $1
        ORDER BY s.register_number ASC`,
       [subjectId]
     );
@@ -220,6 +222,116 @@ router.get('/obe/attainment', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch OBE attainment report.' });
+  }
+});
+
+// POST /api/faculty/external-marks - Save/enter external marks
+router.post('/external-marks', async (req, res) => {
+  const { student_id, subject_id, marks_obtained } = req.body;
+  if (!student_id || !subject_id) {
+    return res.status(400).json({ error: 'Student ID and Subject ID are required.' });
+  }
+
+  try {
+    // Verify assignment
+    const assignmentCheck = await db.query(
+      'SELECT id FROM faculty_subjects WHERE faculty_id = $1 AND subject_id = $2',
+      [req.faculty.id, subject_id]
+    );
+    if (assignmentCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied. You are not assigned to this subject.' });
+    }
+
+    const result = await db.query(
+      `INSERT INTO external_marks (student_id, subject_id, marks_obtained, entered_by, updated_at)
+       VALUES ($1, $2, $3, NULL, NOW())
+       ON CONFLICT (student_id, subject_id) 
+       DO UPDATE SET 
+         marks_obtained = EXCLUDED.marks_obtained,
+         updated_at = NOW()
+       RETURNING *`,
+      [
+        student_id, 
+        subject_id, 
+        marks_obtained !== undefined ? marks_obtained : 0
+      ]
+    );
+
+    await logAudit(
+      req.faculty.id, 
+      'ENTER_EXTERNAL_MARKS', 
+      'external_marks', 
+      result.rows[0].id, 
+      `Entered external marks for student ${student_id} in subject ${subject_id}`
+    );
+
+    res.json({ message: 'External marks saved successfully.', marks: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to save external marks.' });
+  }
+});
+
+const calcGrade = (score) => {
+  if (score >= 91) return 'O';
+  if (score >= 81) return 'A+';
+  if (score >= 71) return 'A';
+  if (score >= 61) return 'B+';
+  if (score >= 50) return 'B';
+  if (score >= 45) return 'RA';
+  return 'U';
+};
+
+// POST /api/faculty/compute-results - Compute results for a subject
+router.post('/compute-results', async (req, res) => {
+  const { subject_id } = req.body;
+  try {
+    // Verify assignment
+    const assignmentCheck = await db.query(
+      'SELECT id FROM faculty_subjects WHERE faculty_id = $1 AND subject_id = $2',
+      [req.faculty.id, subject_id]
+    );
+    if (assignmentCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied. You are not assigned to this subject.' });
+    }
+
+    // Get all students for the subject with both marks
+    const marksData = await db.query(
+      `SELECT s.id AS student_id,
+              sub.id AS subject_id,
+              COALESCE(im.internal_total, 0) AS internal_total,
+              COALESCE(em.external_total, 0) AS external_total
+       FROM students s
+       JOIN subjects sub ON s.semester_id = sub.semester_id
+       LEFT JOIN internal_marks im ON im.student_id = s.id AND im.subject_id = sub.id
+       LEFT JOIN external_marks em ON em.student_id = s.id AND em.subject_id = sub.id
+       WHERE sub.id = $1`,
+      [subject_id]
+    );
+
+    let count = 0;
+    for (const row of marksData.rows) {
+      const internalTotal = parseFloat(row.internal_total) || 0;
+      const externalTotal = parseFloat(row.external_total) || 0;
+      const finalScore = internalTotal + externalTotal;
+      const grade = calcGrade(finalScore);
+      const passFail = externalTotal >= 30 && finalScore >= 50 ? 'Pass' : 'Fail';
+
+      await db.query(
+        `INSERT INTO results (student_id, subject_id, internal_total, external_total, grade, pass_fail)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (student_id, subject_id) DO UPDATE
+         SET internal_total=$3, external_total=$4, grade=$5, pass_fail=$6, is_published=false`,
+        [row.student_id, row.subject_id, internalTotal, externalTotal, grade, passFail]
+      );
+      count++;
+    }
+
+    await logAudit(req.faculty.id, 'COMPUTE_RESULTS', 'results', null, `Computed results for subject ${subject_id}, ${count} records`);
+    res.json({ message: `Results computed for ${count} students.`, count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to compute results.' });
   }
 });
 

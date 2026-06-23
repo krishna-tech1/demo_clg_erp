@@ -89,7 +89,7 @@ router.get('/summary', async (req, res) => {
        FROM results r
        LEFT JOIN subjects sub ON r.subject_id=sub.id
        LEFT JOIN semesters sem ON sub.semester_id=sem.id
-       WHERE r.is_published=true ${semFilter}
+       WHERE 1=1 ${semFilter}
        GROUP BY sub.id, sub.subject_code, sub.subject_name
        ORDER BY sub.subject_code`,
       params
@@ -113,11 +113,12 @@ router.get('/hall-ticket/:student_id', async (req, res) => {
     if (student.rows.length === 0) return res.status(404).json({ error: 'Student not found.' });
 
     const schedules = await db.query(
-      `SELECT es.*, sub.subject_code, sub.subject_name
-       FROM exam_schedules es
-       LEFT JOIN subjects sub ON es.subject_id=sub.id
-       JOIN student_subjects ss ON ss.subject_id=es.subject_id
-       WHERE ss.student_id=$1 AND es.is_published=true
+      `SELECT sub.subject_code, sub.subject_name, sub.credits,
+              es.exam_date, es.session, es.start_time, es.end_time, es.venue, es.is_published
+       FROM students s
+       JOIN subjects sub ON sub.semester_id = s.semester_id
+       LEFT JOIN exam_schedules es ON es.subject_id = sub.id
+       WHERE s.id = $1 AND (es.is_published = TRUE OR es.is_published IS NULL)
        ORDER BY es.exam_date, es.session`, [req.params.student_id]
     );
 

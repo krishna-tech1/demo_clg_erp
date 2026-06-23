@@ -172,6 +172,12 @@ export const getFacultySubjectStudents = (subjectId) =>
 export const saveFacultyMarks = (data) =>
   fetch(`${BASE_URL}/faculty/marks`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
 
+export const saveFacultyExternalMarks = (data) =>
+  fetch(`${BASE_URL}/faculty/external-marks`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+export const facultyComputeResults = (data) =>
+  fetch(`${BASE_URL}/faculty/compute-results`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
 export const getFacultySubjectCos = (subjectId) =>
   fetch(`${BASE_URL}/faculty/subjects/${subjectId}/cos`, { headers: authHeaders() }).then(handleResponse);
 

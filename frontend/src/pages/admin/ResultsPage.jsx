@@ -189,7 +189,7 @@ export default function ResultsPage() {
         <div className="card">
           <div className="card-header"><div className="card-title">Subject-wise Pass Percentage</div></div>
           {summary.length === 0 ? (
-            <div className="empty-state"><div className="empty-state-icon"><BarChart2 size={32} /></div><h3>No data</h3><p>Publish results to see summary</p></div>
+            <div className="empty-state"><div className="empty-state-icon"><BarChart2 size={32} /></div><h3>No data</h3><p>Compute and save results to see summary</p></div>
           ) : (
             <div className="table-container">
               <table>

@@ -123,10 +123,15 @@ router.post('/compute-results', async (req, res) => {
   try {
     // Get all students for the subject with both marks
     const marksData = await db.query(
-      `SELECT im.student_id, im.subject_id, im.internal_total, em.external_total
-       FROM internal_marks im
-       LEFT JOIN external_marks em ON em.student_id=im.student_id AND em.subject_id=im.subject_id
-       WHERE im.subject_id=$1`,
+      `SELECT s.id AS student_id,
+              sub.id AS subject_id,
+              COALESCE(im.internal_total, 0) AS internal_total,
+              COALESCE(em.external_total, 0) AS external_total
+       FROM students s
+       JOIN subjects sub ON s.semester_id = sub.semester_id
+       LEFT JOIN internal_marks im ON im.student_id = s.id AND im.subject_id = sub.id
+       LEFT JOIN external_marks em ON em.student_id = s.id AND em.subject_id = sub.id
+       WHERE sub.id = $1`,
       [subject_id]
     );
 
