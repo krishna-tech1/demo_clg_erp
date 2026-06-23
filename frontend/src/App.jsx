@@ -13,7 +13,6 @@ import StudentsPage from './pages/admin/StudentsPage';
 import FacultyPage from './pages/admin/FacultyPage';
 import CurriculumPage from './pages/admin/CurriculumPage';
 import ExamSchedulePage from './pages/admin/ExamSchedulePage';
-import MarksPage from './pages/admin/MarksPage';
 import ResultsPage from './pages/admin/ResultsPage';
 import HallTicketsPage from './pages/admin/HallTicketsPage';
 import OBEPage from './pages/admin/OBEPage';
@@ -31,6 +30,7 @@ import StudentLayout from './components/student/StudentLayout';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentHallTicket from './pages/student/StudentHallTicket';
 import StudentResults from './pages/student/StudentResults';
+import StudentTimetable from './pages/student/StudentTimetable';
 
 import './index.css';
 
@@ -68,7 +68,6 @@ function AdminPages() {
         <Route path="faculty" element={<FacultyPage />} />
         <Route path="curriculum" element={<CurriculumPage />} />
         <Route path="exam-schedule" element={<ExamSchedulePage />} />
-        <Route path="marks" element={<MarksPage />} />
         <Route path="results" element={<ResultsPage />} />
         <Route path="hall-tickets" element={<HallTicketsPage />} />
         <Route path="obe" element={<OBEPage />} />
@@ -102,6 +101,7 @@ function StudentPages() {
     <StudentLayout collapsed={collapsed} setCollapsed={setCollapsed}>
       <Routes>
         <Route path="dashboard" element={<StudentDashboard />} />
+        <Route path="timetable" element={<StudentTimetable />} />
         <Route path="hall-ticket" element={<StudentHallTicket />} />
         <Route path="results" element={<StudentResults />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />

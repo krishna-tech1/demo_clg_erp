@@ -22,7 +22,6 @@ const NAV_ITEMS = [
     { path: '/admin/exam-schedule', label: 'Exam Schedule', icon: <Calendar size={18} /> },
   ]},
   { section: 'Marks & Results', items: [
-    { path: '/admin/marks', label: 'Marks Entry', icon: <FileEdit size={18} /> },
     { path: '/admin/results', label: 'Results', icon: <ClipboardList size={18} /> },
     { path: '/admin/hall-tickets', label: 'Hall Tickets', icon: <Ticket size={18} /> },
   ]},

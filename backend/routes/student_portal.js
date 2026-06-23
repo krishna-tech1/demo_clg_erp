@@ -58,10 +58,10 @@ router.get('/hall-ticket', async (req, res) => {
     const schedules = await db.query(
       `SELECT sub.subject_code, sub.subject_name, sub.credits,
               es.exam_date, es.session, es.start_time, es.end_time, es.venue, es.is_published
-       FROM student_subjects ss
-       JOIN subjects sub ON ss.subject_id = sub.id
+       FROM students s
+       JOIN subjects sub ON sub.semester_id = s.semester_id
        LEFT JOIN exam_schedules es ON es.subject_id = sub.id
-       WHERE ss.student_id = $1 AND (es.is_published = TRUE OR es.is_published IS NULL)`,
+       WHERE s.id = $1 AND (es.is_published = TRUE OR es.is_published IS NULL)`,
       [req.student.id]
     );
 

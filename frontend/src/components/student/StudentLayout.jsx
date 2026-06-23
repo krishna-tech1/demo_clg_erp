@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 
 import { 
   LayoutDashboard, Ticket, ClipboardList, LogOut, 
-  Sun, Moon, ChevronRight, ChevronLeft, GraduationCap
+  Sun, Moon, ChevronRight, ChevronLeft, GraduationCap, Calendar
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
     { path: '/student/dashboard', label: 'Student Dashboard', icon: <LayoutDashboard size={18} /> },
   ]},
   { section: 'Assessment', items: [
+    { path: '/student/timetable', label: 'Exam Timetable', icon: <Calendar size={18} /> },
     { path: '/student/hall-ticket', label: 'Hall Ticket', icon: <Ticket size={18} /> },
     { path: '/student/results', label: 'Results', icon: <ClipboardList size={18} /> },
   ]},
