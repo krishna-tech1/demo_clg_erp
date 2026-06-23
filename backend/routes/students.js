@@ -81,15 +81,17 @@ router.get('/:id', async (req, res) => {
 // POST /api/admin/students
 router.post('/', async (req, res) => {
   const { register_number, full_name, email, password, department_id, semester_id, date_of_birth, phone } = req.body;
-  if (!register_number || !full_name || !email || !password)
+  if (!register_number || !full_name || !email)
     return res.status(400).json({ error: 'Required fields missing.' });
   try {
     const hash = await bcrypt.hash(password || register_number, 10);
+
     const result = await db.query(
       `INSERT INTO students (register_number, full_name, email, password_hash, department_id, semester_id, date_of_birth, phone)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [register_number, full_name, email, hash, department_id, semester_id, date_of_birth || null, phone || null]
+      [register_number, full_name, email, hash, department_id || null, semester_id || null, date_of_birth || null, phone || null]
     );
+
     const student = result.rows[0];
 
     // Auto-enroll in semester subjects
@@ -119,7 +121,7 @@ router.put('/:id', async (req, res) => {
     const result = await db.query(
       `UPDATE students SET full_name=$1, email=$2, department_id=$3, semester_id=$4, date_of_birth=$5, phone=$6
        WHERE id=$7 RETURNING *`,
-      [full_name, email, department_id, semester_id, date_of_birth || null, phone || null, req.params.id]
+      [full_name, email, department_id || null, semester_id || null, date_of_birth || null, phone || null, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found.' });
     await logAudit(req.admin.id, 'UPDATE_STUDENT', 'student', req.params.id, `Updated student ${full_name}`);
