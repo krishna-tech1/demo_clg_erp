@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { section: 'Assessment', items: [
     { path: '/student/timetable', label: 'Exam Timetable', icon: <Calendar size={18} /> },
     { path: '/student/hall-ticket', label: 'Hall Ticket', icon: <Ticket size={18} /> },
+    { path: '/student/internal-marks', label: 'Internal Marks', icon: <ClipboardList size={18} /> },
     { path: '/student/results', label: 'Results', icon: <ClipboardList size={18} /> },
   ]},
 ];

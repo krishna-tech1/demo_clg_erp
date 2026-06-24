@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { getStudents, createStudent, updateStudent, deleteStudent, getDepartments, getSemesters } from '../../api/admin';
-import { Search, Plus, GraduationCap, Edit, Trash2, X } from 'lucide-react';
+import { Search, Plus, GraduationCap, Edit, Trash2, X, Download, Upload } from 'lucide-react';
+import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -82,6 +83,82 @@ export default function StudentsPage() {
     }
   };
 
+  const handleExport = () => {
+    const dataToExport = students.map(s => ({
+      'Register Number': s.register_number,
+      'Full Name': s.full_name,
+      'Email': s.email,
+      'Phone': s.phone || '',
+      'Department Code': s.dept_code || '',
+      'Semester': s.semester_number || '',
+      'Date of Birth': s.date_of_birth?.split('T')[0] || ''
+    }));
+    exportToExcel(dataToExport, 'Students_List', 'Students');
+    toast.success('Students exported successfully.');
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const loadingToast = toast.loading('Importing students from Excel...');
+    try {
+      const rows = await importFromExcel(file);
+      if (rows.length === 0) {
+        toast.error('No rows found in Excel sheet.', { id: loadingToast });
+        return;
+      }
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (const row of rows) {
+        const regNo = row['Register Number'] || row['register_number'] || row['Reg No'] || row['register_no'];
+        const fullName = row['Full Name'] || row['full_name'] || row['Name'] || row['name'];
+        const email = row['Email'] || row['email'];
+        const phone = row['Phone'] || row['phone'] || '';
+        const deptCode = row['Department Code'] || row['department_code'] || row['Department'] || '';
+        const semNo = row['Semester'] || row['semester_number'] || row['sem'] || '';
+        const dob = row['Date of Birth'] || row['date_of_birth'] || row['DOB'] || '';
+        
+        if (!regNo || !fullName || !email) {
+          errorCount++;
+          continue;
+        }
+
+        const dept = departments.find(d => d.code === deptCode.toString().toUpperCase() || d.name === deptCode);
+        const deptId = dept ? dept.id : '';
+        
+        let semId = '';
+        if (deptId && semNo) {
+          const sems = await getSemesters({ department_id: deptId });
+          const sem = sems.semesters.find(s => s.semester_number === parseInt(semNo));
+          if (sem) semId = sem.id;
+        }
+        
+        try {
+          await createStudent({
+            register_number: regNo.toString(),
+            full_name: fullName,
+            email,
+            phone: phone.toString(),
+            department_id: deptId,
+            semester_id: semId,
+            date_of_birth: dob ? dob.toString().split('T')[0] : null,
+            password: regNo.toString()
+          });
+          importedCount++;
+        } catch (err) {
+          errorCount++;
+        }
+      }
+      toast.success(`Imported ${importedCount} students.${errorCount > 0 ? ` Failed to import ${errorCount} rows.` : ''}`, { id: loadingToast });
+      load();
+    } catch (err) {
+      toast.error('Failed to import Excel file.', { id: loadingToast });
+    }
+    e.target.value = ''; // Reset file input
+  };
+
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -113,9 +190,18 @@ export default function StudentsPage() {
               <option value="asc">Ascending</option>
             </select>
           </div>
-          <button id="add-student-btn" className="btn btn-primary" onClick={openAdd} style={{display:'flex', alignItems:'center', gap:'6px'}}>
-            <Plus size={16} /> Add Student
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
+              <Upload size={16} /> Import Excel
+              <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImport} style={{ display: 'none' }} />
+            </label>
+            <button className="btn btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Download size={16} /> Export Excel
+            </button>
+            <button id="add-student-btn" className="btn btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Plus size={16} /> Add Student
+            </button>
+          </div>
         </div>
 
         {loading ? (

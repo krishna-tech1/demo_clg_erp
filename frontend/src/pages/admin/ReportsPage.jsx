@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getResultsSummary, getInternalMarks, getExternalMarks, getSemesters } from '../../api/admin';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BarChart as BarChartIcon, Edit, Building2, FileText, ClipboardList } from 'lucide-react';
+import { BarChart as BarChartIcon, Edit, Building2, FileText, ClipboardList, Printer } from 'lucide-react';
+import { exportToExcel } from '../../utils/excelHelper';
+import { toast } from 'react-hot-toast';
 
 const REPORT_TYPES = [
   { id: 'pass-percentage', label: 'Pass Percentage', icon: BarChartIcon, desc: 'Subject-wise pass/fail analysis' },
@@ -39,6 +41,42 @@ export default function ReportsPage() {
     finally { setLoading(false); }
   };
 
+  const handleExportExcel = () => {
+    if (data.length === 0) return toast.error('No data available to export.');
+    let dataToExport = [];
+    if (reportType === 'pass-percentage') {
+      dataToExport = data.map(r => ({
+        'Subject Code': r.subject_code,
+        'Subject Name': r.subject_name,
+        'Total Students': r.total,
+        'Passed Students': r.passed,
+        'Failed Students': r.failed,
+        'Average Score': r.avg_score,
+        'Pass Percentage': `${r.pass_percent}%`
+      }));
+    } else if (reportType === 'internal') {
+      dataToExport = data.map(r => ({
+        'Register Number': r.register_number,
+        'Student Name': r.student_name,
+        'Subject Code': r.subject_code,
+        'Model 1 Marks': r.model1_marks,
+        'Model 2 Marks': r.model2_marks,
+        'Practical Marks': r.practical_marks,
+        'Internal Total (40)': r.internal_total
+      }));
+    } else {
+      dataToExport = data.map(r => ({
+        'Register Number': r.register_number,
+        'Student Name': r.student_name,
+        'Subject Code': r.subject_code,
+        'University Exam Marks': r.marks_obtained,
+        'External Total (60)': r.external_total
+      }));
+    }
+    exportToExcel(dataToExport, `${reportType}_report`, 'Report');
+    toast.success('Report exported to Excel successfully.');
+  };
+
   const chartData = reportType === 'pass-percentage' ? data.map(d => ({
     name: d.subject_code,
     Pass: parseInt(d.passed),
@@ -53,8 +91,27 @@ export default function ReportsPage() {
         <p>Generate and view college performance reports</p>
       </div>
 
+      <style>{`
+        @media print {
+          .sidebar, .admin-header, .no-print, header, aside, .theme-toggle {
+            display: none !important;
+          }
+          .admin-layout, .admin-main, .admin-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+          .card {
+            box-shadow: none !important;
+            border: 1px solid #000 !important;
+            margin: 0 !important;
+            padding: 10px !important;
+          }
+        }
+      `}</style>
+
       {/* Report Type Selection */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'12px', marginBottom:'20px' }}>
+      <div className="no-print" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'12px', marginBottom:'20px' }}>
         {REPORT_TYPES.map(r => (
           <div key={r.id} onClick={() => setReportType(r.id)}
             style={{ padding:'16px', borderRadius:'var(--radius-lg)', border:`2px solid ${reportType===r.id?'var(--brand-primary)':'var(--border-color)'}`,
@@ -68,7 +125,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ marginBottom:'16px' }}>
+      <div className="card no-print" style={{ marginBottom:'16px' }}>
         <div className="card-body" style={{ display:'flex', gap:'16px', flexWrap:'wrap', alignItems:'flex-end' }}>
           <div style={{ flex:1, minWidth:'200px' }}>
             <label className="form-label">Filter by Semester</label>
@@ -77,8 +134,8 @@ export default function ReportsPage() {
               {semesters.map(s => <option key={s.id} value={s.id}>{s.department_name} – Sem {s.semester_number}</option>)}
             </select>
           </div>
-          <button className="btn btn-secondary" onClick={() => { /* future: PDF export */ alert('PDF export coming soon!'); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><FileText size={16} /> Export PDF</button>
-          <button className="btn btn-secondary" onClick={() => { /* future: Excel export */ alert('Excel export coming soon!'); }} style={{display:'flex', alignItems:'center', gap:'6px'}}><BarChartIcon size={16} /> Export Excel</button>
+          <button className="btn btn-secondary" onClick={() => window.print()} style={{display:'flex', alignItems:'center', gap:'6px'}}><Printer size={16} /> Print Report</button>
+          <button className="btn btn-secondary" onClick={handleExportExcel} style={{display:'flex', alignItems:'center', gap:'6px'}}><BarChartIcon size={16} /> Export Excel</button>
         </div>
       </div>
 

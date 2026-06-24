@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getFacultySubjects, getFacultySubjectStudents, saveFacultyMarks, saveFacultyExternalMarks, facultyComputeResults } from '../../api/admin';
 import { toast } from 'react-hot-toast';
-import { Save, BookOpen, Search, ArrowUpDown, Info, Settings } from 'lucide-react';
+import { Save, BookOpen, Search, ArrowUpDown, Info, Settings, Download, Upload } from 'lucide-react';
+import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
 
 const TABS = ['Internal Marks', 'External Marks'];
 
@@ -177,6 +178,86 @@ export default function FacultyMarksEntry() {
     }
   };
 
+  const handleExportMarks = () => {
+    if (!selectedSubjectId) return toast.error('Select a subject first.');
+    const subObj = subjects.find(s => s.id.toString() === selectedSubjectId.toString());
+    const sortedStudents = getSortedAndFilteredStudents();
+    const dataToExport = sortedStudents.map(s => {
+      const studentMarks = marksState[s.student_id] || { model1: 0, model2: 0, practical: 0, external: 0 };
+      const internalVal = calculateLocalInternal(studentMarks.model1, studentMarks.model2);
+      const externalVal = calculateLocalExternalTotal(studentMarks.external);
+      
+      if (tab === 'Internal Marks') {
+        return {
+          'Register Number': s.register_number,
+          'Student Name': s.full_name,
+          'Model 1 Marks': studentMarks.model1,
+          'Model 2 Marks': studentMarks.model2,
+          'Practical Marks': studentMarks.practical,
+          'Internal Total (40)': internalVal
+        };
+      } else {
+        return {
+          'Register Number': s.register_number,
+          'Student Name': s.full_name,
+          'University Exam Marks (100)': studentMarks.external,
+          'External Total (60)': externalVal
+        };
+      }
+    });
+    exportToExcel(dataToExport, `${subObj?.subject_code}_${tab.replace(' ', '_')}_Marks`, tab);
+    toast.success('Marks exported successfully.');
+  };
+
+  const handleImportMarks = async (e) => {
+    if (!selectedSubjectId) return toast.error('Select a subject first.');
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const rows = await importFromExcel(file);
+      if (rows.length === 0) {
+        toast.error('No rows found in Excel sheet.');
+        return;
+      }
+      
+      const newMarksState = { ...marksState };
+      let matchedCount = 0;
+      
+      rows.forEach(row => {
+        const regNo = (row['Register Number'] || row['register_number'] || row['Reg No'] || row['register_no'])?.toString().trim();
+        if (!regNo) return;
+        
+        const student = students.find(s => s.register_number === regNo);
+        if (!student) return;
+        
+        matchedCount++;
+        if (tab === 'Internal Marks') {
+          const m1 = row['Model 1 Marks'] ?? row['Model 1'] ?? row['model1_marks'] ?? 0;
+          const m2 = row['Model 2 Marks'] ?? row['Model 2'] ?? row['model2_marks'] ?? 0;
+          const prac = row['Practical Marks'] ?? row['Practical'] ?? row['practical_marks'] ?? 0;
+          newMarksState[student.student_id] = {
+            ...newMarksState[student.student_id],
+            model1: parseFloat(m1) || 0,
+            model2: parseFloat(m2) || 0,
+            practical: parseFloat(prac) || 0
+          };
+        } else {
+          const ext = row['University Exam Marks (100)'] || row['University Marks'] || row['marks_obtained'] || 0;
+          newMarksState[student.student_id] = {
+            ...newMarksState[student.student_id],
+            external: parseFloat(ext) || 0
+          };
+        }
+      });
+      
+      setMarksState(newMarksState);
+      toast.success(`Imported marks for ${matchedCount} students. Review and click "Save All Marks" to save.`);
+    } catch (err) {
+      toast.error('Failed to parse Excel file.');
+    }
+    e.target.value = ''; // Reset file input
+  };
+
   const getSortedAndFilteredStudents = () => {
     let filtered = students.filter(s => 
       s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -283,7 +364,14 @@ export default function FacultyMarksEntry() {
             )}
           </div>
           {selectedSubjectId && (
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
+                <Upload size={16} /> Import Excel
+                <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImportMarks} style={{ display: 'none' }} />
+              </label>
+              <button className="btn btn-secondary" onClick={handleExportMarks} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Download size={16} /> Export Excel
+              </button>
               <button className="btn btn-primary" onClick={handleSaveAllMarks} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Save size={16} /> Save All Marks
               </button>

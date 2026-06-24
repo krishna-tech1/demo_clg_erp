@@ -31,6 +31,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentHallTicket from './pages/student/StudentHallTicket';
 import StudentResults from './pages/student/StudentResults';
 import StudentTimetable from './pages/student/StudentTimetable';
+import StudentInternalMarks from './pages/student/StudentInternalMarks';
 
 import './index.css';
 
@@ -103,6 +104,7 @@ function StudentPages() {
         <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="timetable" element={<StudentTimetable />} />
         <Route path="hall-ticket" element={<StudentHallTicket />} />
+        <Route path="internal-marks" element={<StudentInternalMarks />} />
         <Route path="results" element={<StudentResults />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>

@@ -132,8 +132,19 @@ router.post('/subjects', async (req, res) => {
       'INSERT INTO subjects (semester_id, subject_code, subject_name, credits, subject_type) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [semester_id, subject_code.toUpperCase(), subject_name, credits || 3, subject_type || 'theory']
     );
-    await logAudit(req.admin.id, 'CREATE_SUBJECT', 'subject', result.rows[0].id, `${subject_code} - ${subject_name}`);
-    res.status(201).json({ subject: result.rows[0] });
+    const subject = result.rows[0];
+
+    // Auto-enroll existing students in this semester into this new subject
+    const students = await db.query('SELECT id FROM students WHERE semester_id = $1', [semester_id]);
+    for (const stud of students.rows) {
+      await db.query(
+        'INSERT INTO student_subjects (student_id, subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [stud.id, subject.id]
+      );
+    }
+
+    await logAudit(req.admin.id, 'CREATE_SUBJECT', 'subject', subject.id, `${subject_code} - ${subject_name}`);
+    res.status(201).json({ subject });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Subject code already exists.' });
     res.status(500).json({ error: 'Failed.' });

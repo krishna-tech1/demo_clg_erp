@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getResults, publishResults, getResultsSummary, getSubjects, getSemesters } from '../../api/admin';
-import { Send, ClipboardList, CheckCircle, XCircle, BarChart2 } from 'lucide-react';
+import { Send, ClipboardList, CheckCircle, XCircle, BarChart2, Download } from 'lucide-react';
+import { exportToExcel } from '../../utils/excelHelper';
 
 const GRADE_COLORS = { 'O':'badge-success','A+':'badge-success','A':'badge-info','B+':'badge-info','B':'badge-purple','RA':'badge-warning','U':'badge-danger' };
 
@@ -59,6 +60,38 @@ export default function ResultsPage() {
       toast.error(err.message);
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleExport = () => {
+    if (tab === 'Results') {
+      if (results.length === 0) return toast.error('No results to export.');
+      const dataToExport = results.map(r => ({
+        'Register Number': r.register_number,
+        'Student Name': r.student_name,
+        'Subject': r.subject_code,
+        'Internal Total (40)': parseFloat(r.internal_total).toFixed(1),
+        'External Total (60)': parseFloat(r.external_total).toFixed(1),
+        'Total Score (100)': parseFloat(r.final_score).toFixed(1),
+        'Grade': r.grade,
+        'Result': r.pass_fail,
+        'Status': r.is_published ? 'Published' : 'Pending'
+      }));
+      exportToExcel(dataToExport, 'Results_List', 'Results');
+      toast.success('Results exported successfully.');
+    } else {
+      if (summary.length === 0) return toast.error('No summary to export.');
+      const dataToExport = summary.map(s => ({
+        'Subject Code': s.subject_code,
+        'Subject Name': s.subject_name,
+        'Total': s.total,
+        'Passed': s.passed,
+        'Failed': s.failed,
+        'Avg Score': s.avg_score,
+        'Pass %': `${s.pass_percent}%`
+      }));
+      exportToExcel(dataToExport, 'Results_Summary', 'Summary');
+      toast.success('Summary exported successfully.');
     }
   };
 
@@ -121,6 +154,9 @@ export default function ResultsPage() {
               <option value="desc">Descending</option>
             </select>
           </div>
+          <button className="btn btn-secondary" onClick={handleExport} style={{display:'flex', alignItems:'center', gap:'6px'}}>
+            <Download size={16} /> Export
+          </button>
           <button className="btn btn-success" onClick={handlePublish} disabled={publishing} style={{display:'flex', alignItems:'center', gap:'6px'}}>
             {publishing ? 'Publishing...' : <><Send size={16} /> Publish Results</>}
           </button>

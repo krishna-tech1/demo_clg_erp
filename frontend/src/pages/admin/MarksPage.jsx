@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getSubjects, getStudents, getInternalMarks, saveInternalMarks, getExternalMarks, saveExternalMarks, computeResults } from '../../api/admin';
-import { Save, Settings, Info, Edit, GraduationCap } from 'lucide-react';
+import { Save, Settings, Info, Edit, GraduationCap, Download, Upload } from 'lucide-react';
+import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
 
 const TABS = ['Internal Marks', 'External Marks'];
 
@@ -84,6 +85,85 @@ export default function MarksPage() {
     }
   };
 
+  const handleExportMarks = () => {
+    if (!selectedSubject) return toast.error('Select a subject first.');
+    const subObj = subjects.find(s => s.id == selectedSubject);
+    const dataToExport = students.map(s => {
+      if (tab === 'Internal Marks') {
+        return {
+          'Register Number': s.register_number,
+          'Student Name': s.full_name,
+          'Model 1 Marks': marksData[s.id]?.model1_marks ?? 0,
+          'Model 2 Marks': marksData[s.id]?.model2_marks ?? 0,
+          'Practical Marks': marksData[s.id]?.practical_marks ?? 0,
+          'Internal Total (40)': internalTotal(s)
+        };
+      } else {
+        return {
+          'Register Number': s.register_number,
+          'Student Name': s.full_name,
+          'University Exam Marks (100)': marksData[s.id]?.marks_obtained ?? 0,
+          'External Total (60)': externalTotal(s)
+        };
+      }
+    });
+    exportToExcel(dataToExport, `${subObj?.subject_code}_${tab.replace(' ', '_')}_Marks`, tab);
+    toast.success('Marks exported successfully.');
+  };
+
+  const handleImportMarks = async (e) => {
+    if (!selectedSubject) return toast.error('Select a subject first.');
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const rows = await importFromExcel(file);
+      if (rows.length === 0) {
+        toast.error('No rows found in Excel sheet.');
+        return;
+      }
+      
+      const newMarksData = { ...marksData };
+      let matchedCount = 0;
+      
+      rows.forEach(row => {
+        const regNo = (row['Register Number'] || row['register_number'] || row['Reg No'] || row['register_no'])?.toString().trim();
+        if (!regNo) return;
+        
+        const student = students.find(s => s.register_number === regNo);
+        if (!student) return;
+        
+        matchedCount++;
+        if (tab === 'Internal Marks') {
+          const m1 = row['Model 1 Marks'] ?? row['Model 1'] ?? row['model1_marks'] ?? 0;
+          const m2 = row['Model 2 Marks'] ?? row['Model 2'] ?? row['model2_marks'] ?? 0;
+          const prac = row['Practical Marks'] ?? row['Practical'] ?? row['practical_marks'] ?? 0;
+          newMarksData[student.id] = {
+            ...newMarksData[student.id],
+            student_id: student.id,
+            subject_id: selectedSubject,
+            model1_marks: m1,
+            model2_marks: m2,
+            practical_marks: prac
+          };
+        } else {
+          const ext = row['University Exam Marks (100)'] || row['University Marks'] || row['marks_obtained'] || 0;
+          newMarksData[student.id] = {
+            ...newMarksData[student.id],
+            student_id: student.id,
+            subject_id: selectedSubject,
+            marks_obtained: ext
+          };
+        }
+      });
+      
+      setMarksData(newMarksData);
+      toast.success(`Imported marks for ${matchedCount} students. Click "Save All Marks" to commit.`);
+    } catch (err) {
+      toast.error('Failed to parse Excel file.');
+    }
+    e.target.value = ''; // Reset file input
+  };
+
   const internalTotal = (s) => {
     const d = marksData[s.id];
     if (!d) return 0;
@@ -126,16 +206,23 @@ export default function MarksPage() {
             </select>
           </div>
           {selectedSubject && (
-            <>
-              <button className="btn btn-primary" onClick={handleSaveAll} disabled={saving} style={{display:'flex', alignItems:'center', gap:'6px'}}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
+                <Upload size={16} /> Import Excel
+                <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImportMarks} style={{ display: 'none' }} />
+              </label>
+              <button className="btn btn-secondary" onClick={handleExportMarks} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Download size={16} /> Export Excel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveAll} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {saving ? 'Saving...' : <><Save size={16} /> Save All Marks</>}
               </button>
               {tab === 'External Marks' && (
-                <button className="btn btn-success" onClick={handleCompute} disabled={computing} style={{display:'flex', alignItems:'center', gap:'6px'}}>
+                <button className="btn btn-success" onClick={handleCompute} disabled={computing} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {computing ? 'Computing...' : <><Settings size={16} /> Compute Results</>}
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

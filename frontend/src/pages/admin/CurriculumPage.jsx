@@ -5,7 +5,8 @@ import {
   getSemesters, createSemester, deleteSemester,
   getSubjects, createSubject, updateSubject, deleteSubject
 } from '../../api/admin';
-import { Plus, Building, Calendar, BookOpen, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Building, Calendar, BookOpen, Edit, Trash2, X, Download, Upload } from 'lucide-react';
+import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
 
 const TABS = ['Departments', 'Semesters'];
 
@@ -98,6 +99,66 @@ export default function CurriculumPage() {
     if (!window.confirm(`Delete subject "${code}"?`)) return;
     try { await deleteSubject(id); toast.success('Deleted.'); loadSubs(); }
     catch (err) { toast.error(err.message); }
+  };
+
+  const handleExportSubjects = () => {
+    if (!selectedSemId) return;
+    const filteredSubs = subjects.filter(sub => sub.semester_id === selectedSemId);
+    const dataToExport = filteredSubs.map(s => ({
+      'Subject Code': s.subject_code,
+      'Subject Name': s.subject_name,
+      'Credits': s.credits,
+      'Subject Type': s.subject_type
+    }));
+    exportToExcel(dataToExport, `Subjects_Sem_${selectedSemId}`, 'Subjects');
+    toast.success('Subjects exported successfully.');
+  };
+
+  const handleImportSubjects = async (e) => {
+    if (!selectedSemId) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const loadingToast = toast.loading('Importing subjects from Excel...');
+    try {
+      const rows = await importFromExcel(file);
+      if (rows.length === 0) {
+        toast.error('No rows found in Excel sheet.', { id: loadingToast });
+        return;
+      }
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (const row of rows) {
+        const code = row['Subject Code'] || row['subject_code'] || row['Code'] || row['code'];
+        const name = row['Subject Name'] || row['subject_name'] || row['Name'] || row['name'];
+        const credits = row['Credits'] || row['credits'] || 3;
+        const type = (row['Subject Type'] || row['subject_type'] || 'theory').toString().toLowerCase();
+        
+        if (!code || !name) {
+          errorCount++;
+          continue;
+        }
+        
+        try {
+          await createSubject({
+            semester_id: selectedSemId.toString(),
+            subject_code: code.toString().toUpperCase(),
+            subject_name: name,
+            credits: parseInt(credits) || 3,
+            subject_type: ['theory', 'practical', 'elective'].includes(type) ? type : 'theory'
+          });
+          importedCount++;
+        } catch (err) {
+          errorCount++;
+        }
+      }
+      toast.success(`Imported ${importedCount} subjects.${errorCount > 0 ? ` Failed ${errorCount} rows.` : ''}`, { id: loadingToast });
+      loadSubs();
+    } catch (err) {
+      toast.error('Failed to import Excel file.', { id: loadingToast });
+    }
+    e.target.value = ''; // Reset file input
   };
 
   return (
@@ -257,20 +318,29 @@ export default function CurriculumPage() {
 
           {/* Column 3: Subjects */}
           <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px', display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
               <div className="card-title" style={{ fontSize: '15px' }}>3. Subjects</div>
               {selectedSemId && (
-                <button 
-                  className="btn btn-primary btn-sm" 
-                  onClick={() => {
-                    setEditingSub(null);
-                    setSubForm({ semester_id: selectedSemId.toString(), subject_code: '', subject_name: '', credits: 3, subject_type: 'theory' });
-                    setShowSubModal(true);
-                  }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Plus size={12} /> Add
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <label className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0, padding: '6px 8px' }}>
+                    <Upload size={12} /> Import
+                    <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImportSubjects} style={{ display: 'none' }} />
+                  </label>
+                  <button className="btn btn-secondary btn-sm" onClick={handleExportSubjects} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px' }}>
+                    <Download size={12} /> Export
+                  </button>
+                  <button 
+                    className="btn btn-primary btn-sm" 
+                    onClick={() => {
+                      setEditingSub(null);
+                      setSubForm({ semester_id: selectedSemId.toString(), subject_code: '', subject_name: '', credits: 3, subject_type: 'theory' });
+                      setShowSubModal(true);
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px' }}
+                  >
+                    <Plus size={12} /> Add
+                  </button>
+                </div>
               )}
             </div>
             <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '450px', overflowY: 'auto' }}>

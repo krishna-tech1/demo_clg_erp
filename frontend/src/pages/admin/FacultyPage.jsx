@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { getFaculty, createFaculty, updateFaculty, deleteFaculty, getDepartments, getFacultySubjectsForAdmin, assignSubjectToFaculty, unassignSubjectFromFaculty, getSubjects } from '../../api/admin';
-import { Search, UserPlus, Users, Edit, Trash2, X, BookOpen, Plus } from 'lucide-react';
+import { Search, UserPlus, Users, Edit, Trash2, X, BookOpen, Plus, Download, Upload } from 'lucide-react';
+import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
 
 export default function FacultyPage() {
   const [faculty, setFaculty] = useState([]);
@@ -131,6 +132,69 @@ export default function FacultyPage() {
     }
   };
 
+  const handleExport = () => {
+    const dataToExport = faculty.map(f => ({
+      'Faculty ID': f.faculty_id,
+      'Full Name': f.full_name,
+      'Email': f.email,
+      'Designation': f.designation || '',
+      'Department Code': f.dept_code || ''
+    }));
+    exportToExcel(dataToExport, 'Faculty_List', 'Faculty');
+    toast.success('Faculty list exported successfully.');
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const loadingToast = toast.loading('Importing faculty from Excel...');
+    try {
+      const rows = await importFromExcel(file);
+      if (rows.length === 0) {
+        toast.error('No rows found in Excel sheet.', { id: loadingToast });
+        return;
+      }
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (const row of rows) {
+        const facId = row['Faculty ID'] || row['faculty_id'] || row['ID'] || row['id'];
+        const fullName = row['Full Name'] || row['full_name'] || row['Name'] || row['name'];
+        const email = row['Email'] || row['email'];
+        const designation = row['Designation'] || row['designation'] || '';
+        const deptCode = row['Department Code'] || row['department_code'] || row['Department'] || '';
+        
+        if (!facId || !fullName || !email) {
+          errorCount++;
+          continue;
+        }
+
+        const dept = departments.find(d => d.code === deptCode.toString().toUpperCase() || d.name === deptCode);
+        const deptId = dept ? dept.id : '';
+        
+        try {
+          await createFaculty({
+            faculty_id: facId.toString(),
+            full_name: fullName,
+            email,
+            designation,
+            department_id: deptId,
+            password: facId.toString()
+          });
+          importedCount++;
+        } catch (err) {
+          errorCount++;
+        }
+      }
+      toast.success(`Imported ${importedCount} faculty members.${errorCount > 0 ? ` Failed ${errorCount} rows.` : ''}`, { id: loadingToast });
+      load();
+    } catch (err) {
+      toast.error('Failed to import Excel file.', { id: loadingToast });
+    }
+    e.target.value = ''; // Reset file input
+  };
+
   const DESIGNATIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Senior Lecturer'];
 
   return (
@@ -163,9 +227,18 @@ export default function FacultyPage() {
               <option value="asc">Ascending</option>
             </select>
           </div>
-          <button id="add-faculty-btn" className="btn btn-primary" onClick={openAdd} style={{display:'flex', alignItems:'center', gap:'6px'}}>
-            <UserPlus size={16} /> Add Faculty
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
+              <Upload size={16} /> Import Excel
+              <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImport} style={{ display: 'none' }} />
+            </label>
+            <button className="btn btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Download size={16} /> Export Excel
+            </button>
+            <button id="add-faculty-btn" className="btn btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <UserPlus size={16} /> Add Faculty
+            </button>
+          </div>
         </div>
 
         {loading ? (

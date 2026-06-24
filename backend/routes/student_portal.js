@@ -91,4 +91,23 @@ router.get('/results', async (req, res) => {
   }
 });
 
+// GET /api/student/internal-marks - View internal marks
+router.get('/internal-marks', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT sub.subject_code, sub.subject_name, sub.credits,
+              im.model1_marks, im.model2_marks, im.practical_marks, im.internal_total
+       FROM subjects sub
+       JOIN students s ON s.semester_id = sub.semester_id
+       LEFT JOIN internal_marks im ON im.subject_id = sub.id AND im.student_id = s.id
+       WHERE s.id = $1`,
+      [req.student.id]
+    );
+    res.json({ marks: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch internal marks.' });
+  }
+});
+
 module.exports = router;

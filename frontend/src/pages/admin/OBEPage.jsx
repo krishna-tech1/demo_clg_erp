@@ -4,6 +4,20 @@ import { getSubjects, getCourseOutcomes, saveCourseOutcome, getCoPo, saveCoPo, g
 import { FlaskConical, Save } from 'lucide-react';
 
 const PO_LABELS = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
+const PO_DESCRIPTIONS = {
+  1: 'PO1: Engineering Knowledge',
+  2: 'PO2: Problem Analysis',
+  3: 'PO3: Design/Development of Solutions',
+  4: 'PO4: Conduct Investigations of Complex Problems',
+  5: 'PO5: Modern Tool Usage',
+  6: 'PO6: The Engineer and Society',
+  7: 'PO7: Environment and Sustainability',
+  8: 'PO8: Ethics',
+  9: 'PO9: Individual and Team Work',
+  10: 'PO10: Communication',
+  11: 'PO11: Project Management and Finance',
+  12: 'PO12: Life-long Learning'
+};
 const MAPPING_LABELS = { 0:'—', 1:'Low', 2:'Med', 3:'High' };
 const CELL_COLORS = { 0:'obe-cell-0', 1:'obe-cell-1', 2:'obe-cell-2', 3:'obe-cell-3' };
 
@@ -155,7 +169,9 @@ export default function OBEPage() {
                       <thead>
                         <tr>
                           <th style={{ textAlign:'left' }}>CO / PO</th>
-                          {PO_LABELS.map(po => <th key={po}>{po}</th>)}
+                          {PO_LABELS.map((po, idx) => (
+                            <th key={po} title={PO_DESCRIPTIONS[idx + 1]} style={{ cursor: 'help' }}>{po}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>

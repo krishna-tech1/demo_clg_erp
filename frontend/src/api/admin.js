@@ -203,3 +203,6 @@ export const getStudentHallTicket = () =>
 export const getStudentResults = () =>
   fetch(`${BASE_URL}/student/results`, { headers: authHeaders() }).then(handleResponse);
 
+export const getStudentInternalMarks = () =>
+  fetch(`${BASE_URL}/student/internal-marks`, { headers: authHeaders() }).then(handleResponse);
+

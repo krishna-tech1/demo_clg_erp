@@ -11,6 +11,21 @@ import {
 import { toast } from 'react-hot-toast';
 import { Save, HelpCircle, FileText } from 'lucide-react';
 
+const PO_DESCRIPTIONS = {
+  1: 'PO1: Engineering Knowledge',
+  2: 'PO2: Problem Analysis',
+  3: 'PO3: Design/Development of Solutions',
+  4: 'PO4: Conduct Investigations of Complex Problems',
+  5: 'PO5: Modern Tool Usage',
+  6: 'PO6: The Engineer and Society',
+  7: 'PO7: Environment and Sustainability',
+  8: 'PO8: Ethics',
+  9: 'PO9: Individual and Team Work',
+  10: 'PO10: Communication',
+  11: 'PO11: Project Management and Finance',
+  12: 'PO12: Life-long Learning'
+};
+
 export default function FacultyObe() {
   const location = useLocation();
   const [subjects, setSubjects] = useState([]);
@@ -115,6 +130,7 @@ export default function FacultyObe() {
       } else {
         updatedCos.push(data.co);
       }
+      updatedCos.sort((a, b) => a.co_number - b.co_number);
       setCos(updatedCos);
       
       // Initialize grid row for new CO
@@ -135,30 +151,26 @@ export default function FacultyObe() {
     }
   };
 
-  const handleMappingChange = (coId, poNum, val) => {
+  const handleMappingChange = async (coId, poNum, val) => {
+    const intVal = parseInt(val) || 0;
     setCoPoGrid(prev => ({
       ...prev,
       [coId]: {
         ...prev[coId],
-        [poNum]: parseInt(val)
+        [poNum]: intVal
       }
     }));
-  };
-
-  const handleSaveMapping = async (coId, poNum) => {
-    const val = coPoGrid[coId]?.[poNum] || 0;
-    setSavingMapping(true);
     try {
       await saveFacultyCoPo({
         co_id: coId,
         po_number: poNum,
-        mapping_value: val
+        mapping_value: intVal
       });
-      toast.success('Mapping value updated.');
+      getFacultyObeReports()
+        .then(data => setReports(data.attainment || []))
+        .catch(err => console.error(err));
     } catch (err) {
       toast.error('Failed to save mapping.');
-    } finally {
-      setSavingMapping(false);
     }
   };
 
@@ -249,7 +261,7 @@ export default function FacultyObe() {
                         <th>CO</th>
                         <th>Description</th>
                         {[...Array(12).keys()].map(i => (
-                          <th key={i + 1} style={{ textAlign: 'center' }}>PO {i + 1}</th>
+                          <th key={i + 1} style={{ textAlign: 'center', cursor: 'help' }} title={PO_DESCRIPTIONS[i + 1]}>PO {i + 1}</th>
                         ))}
                       </tr>
                     </thead>
@@ -268,7 +280,6 @@ export default function FacultyObe() {
                                 <select
                                   value={gridVal}
                                   onChange={e => handleMappingChange(co.id, poNum, e.target.value)}
-                                  onBlur={() => handleSaveMapping(co.id, poNum)}
                                   style={{
                                     padding: '4px',
                                     borderRadius: 'var(--radius-sm)',

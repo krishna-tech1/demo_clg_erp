@@ -124,9 +124,22 @@ router.put('/:id', async (req, res) => {
       [full_name, email, department_id || null, semester_id || null, date_of_birth || null, phone || null, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found.' });
+    
+    // Auto-enroll in new semester subjects if semester_id is changed/updated
+    if (semester_id) {
+      const subjects = await db.query('SELECT id FROM subjects WHERE semester_id = $1', [semester_id]);
+      for (const sub of subjects.rows) {
+        await db.query(
+          'INSERT INTO student_subjects (student_id, subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+          [req.params.id, sub.id]
+        );
+      }
+    }
+
     await logAudit(req.admin.id, 'UPDATE_STUDENT', 'student', req.params.id, `Updated student ${full_name}`);
     res.json({ student: result.rows[0] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to update student.' });
   }
 });
