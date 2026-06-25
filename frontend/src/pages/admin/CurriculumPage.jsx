@@ -7,6 +7,7 @@ import {
 } from '../../api/admin';
 import { Plus, Building, Calendar, BookOpen, Edit, Trash2, X, Download, Upload } from 'lucide-react';
 import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const TABS = ['Departments', 'Semesters'];
 
@@ -32,6 +33,14 @@ export default function CurriculumPage() {
   const [semForm, setSemForm] = useState({ department_id:'', semester_number:'', academic_year:'2025-2026', regulation:'2025' });
   const [subForm, setSubForm] = useState({ semester_id:'', subject_code:'', subject_name:'', credits:3, subject_type:'theory' });
   const [saving, setSaving] = useState(false);
+
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
   
   const [subSortBy, setSubSortBy] = useState('subject_code');
   const [subSortOrder, setSubSortOrder] = useState('asc');
@@ -62,9 +71,21 @@ export default function CurriculumPage() {
     finally { setSaving(false); }
   };
   const delDept = async (id, name) => {
-    if (!window.confirm(`Delete department "${name}"?`)) return;
-    try { await deleteDepartment(id); toast.success('Deleted.'); loadDepts(); }
-    catch (err) { toast.error(err.message); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Department',
+      message: `Delete department "${name}"?`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteDepartment(id);
+          toast.success('Deleted.');
+          loadDepts();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   // Semester handlers
@@ -75,14 +96,22 @@ export default function CurriculumPage() {
     finally { setSaving(false); }
   };
   const delSem = async (id) => {
-    if (!window.confirm('Delete this semester?')) return;
-    try { 
-      await deleteSemester(id); 
-      toast.success('Deleted.'); 
-      if (selectedSemId === id) setSelectedSemId(null);
-      loadSems(); 
-    }
-    catch (err) { toast.error(err.message); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Semester',
+      message: 'Delete this semester?',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteSemester(id);
+          toast.success('Deleted.');
+          if (selectedSemId === id) setSelectedSemId(null);
+          loadSems();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   // Subject handlers
@@ -96,9 +125,21 @@ export default function CurriculumPage() {
     finally { setSaving(false); }
   };
   const delSub = async (id, code) => {
-    if (!window.confirm(`Delete subject "${code}"?`)) return;
-    try { await deleteSubject(id); toast.success('Deleted.'); loadSubs(); }
-    catch (err) { toast.error(err.message); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Subject',
+      message: `Delete subject "${code}"?`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteSubject(id);
+          toast.success('Deleted.');
+          loadSubs();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   const handleExportSubjects = () => {
@@ -180,7 +221,7 @@ export default function CurriculumPage() {
         ))}
       </div>
 
-      {loading && <div className="loading-center"><span className="spinner"></span></div>}
+      {loading && <SkeletonLoader type="table" count={5} />}
 
       {/* Departments Tab */}
       {!loading && tab === 'Departments' && (
@@ -525,6 +566,23 @@ export default function CurriculumPage() {
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : (editingSub ? 'Update' : 'Add Subject')}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
+            </div>
           </div>
         </div>
       )}

@@ -44,7 +44,7 @@ router.get('/profile', async (req, res) => {
 router.get('/hall-ticket', async (req, res) => {
   try {
     const studentInfo = await db.query(
-      `SELECT s.id, s.register_number, s.full_name, d.name AS department_name
+      `SELECT s.id, s.register_number, s.full_name, s.is_hall_ticket_released, d.name AS department_name
        FROM students s
        LEFT JOIN departments d ON s.department_id = d.id
        WHERE s.id = $1`,
@@ -53,6 +53,10 @@ router.get('/hall-ticket', async (req, res) => {
 
     if (studentInfo.rows.length === 0) {
       return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    if (!studentInfo.rows[0].is_hall_ticket_released) {
+      return res.status(403).json({ error: 'Your Hall Ticket has not been released by the Controller Office yet. Please contact the administrator.' });
     }
 
     const schedules = await db.query(

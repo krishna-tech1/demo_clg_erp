@@ -4,6 +4,7 @@ import { getFacultySubjects, getFacultySubjectStudents, saveFacultyMarks, saveFa
 import { toast } from 'react-hot-toast';
 import { Save, BookOpen, Search, ArrowUpDown, Info, Settings, Download, Upload } from 'lucide-react';
 import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const TABS = ['Internal Marks', 'External Marks'];
 
@@ -403,9 +404,7 @@ export default function FacultyMarksEntry() {
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <span className="spinner"></span>
-        </div>
+        <SkeletonLoader type="table" count={5} />
       ) : selectedSubjectId && students.length === 0 ? (
         <div className="card" style={{ padding: '30px', textAlign: 'center' }}>
           <p style={{ color: 'var(--text-tertiary)' }}>No students enrolled in this subject.</p>

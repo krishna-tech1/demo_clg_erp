@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getStudentResults } from '../../api/admin';
 import { Award, AlertTriangle, FileCheck } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 export default function StudentResults() {
   const [results, setResults] = useState([]);
@@ -20,8 +21,12 @@ export default function StudentResults() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-        <span className="spinner"></span>
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>Semester Examination Results</h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>Official semester mark sheet and cumulative performance reports.</p>
+        </div>
+        <SkeletonLoader type="table" count={5} />
       </div>
     );
   }

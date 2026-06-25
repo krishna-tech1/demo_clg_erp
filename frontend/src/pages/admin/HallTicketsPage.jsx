@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { getStudents, getHallTicket } from '../../api/admin';
-import { Search, Ticket, Printer, AlertTriangle, User, QrCode } from 'lucide-react';
+import { getStudents, getHallTicket, getDepartments, getSemesters, releaseHallTickets, toggleStudentHallTicket } from '../../api/admin';
+import { Search, Ticket, Printer, AlertTriangle, User, QrCode, CheckCircle, XCircle } from 'lucide-react';
 
 export default function HallTicketsPage() {
   const [students, setStudents] = useState([]);
@@ -13,6 +13,35 @@ export default function HallTicketsPage() {
 
   const [sortBy, setSortBy] = useState('register_number');
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // Bulk Release States
+  const [departments, setDepartments] = useState([]);
+  const [semesters, setSemesters] = useState([]);
+  const [bulkDept, setBulkDept] = useState('');
+  const [bulkSem, setBulkSem] = useState('');
+  const [releasing, setReleasing] = useState(false);
+
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  useEffect(() => {
+    getDepartments()
+      .then(d => setDepartments(d.departments || []))
+      .catch(() => toast.error('Failed to load departments.'));
+  }, []);
+
+  useEffect(() => {
+    const params = {};
+    if (bulkDept) params.department_id = bulkDept;
+    getSemesters(params)
+      .then(s => setSemesters(s.semesters || []))
+      .catch(() => toast.error('Failed to load semesters.'));
+  }, [bulkDept]);
 
   // Load students by default on mount and when sorting changes
   const loadStudents = (searchVal = '') => {
@@ -41,6 +70,47 @@ export default function HallTicketsPage() {
       toast.error(err.message);
     } finally {
       setLoadingTicket(false);
+    }
+  };
+
+  const handleBulkRelease = async (isReleased) => {
+    if (!bulkDept && !bulkSem) {
+      toast.error('Please select at least a Department or Semester for bulk action.');
+      return;
+    }
+    const actionText = isReleased ? 'Release' : 'Revoke';
+    setConfirmModal({
+      isOpen: true,
+      title: `${actionText} Hall Tickets`,
+      message: `Are you sure you want to ${actionText.toLowerCase()} hall tickets for the selected filter?`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        setReleasing(true);
+        try {
+          await releaseHallTickets({
+            department_id: bulkDept || null,
+            semester_id: bulkSem || null,
+            is_released: isReleased
+          });
+          toast.success(`Hall tickets ${isReleased ? 'released' : 'revoked'} successfully.`);
+          loadStudents(search);
+        } catch (err) {
+          toast.error(err.message || 'Failed to update hall tickets.');
+        } finally {
+          setReleasing(false);
+        }
+      }
+    });
+  };
+
+  const handleToggleIndividual = async (studentId, currentStatus) => {
+    const nextStatus = !currentStatus;
+    try {
+      await toggleStudentHallTicket(studentId, { is_released: nextStatus });
+      toast.success(`Hall ticket ${nextStatus ? 'released' : 'revoked'} for student.`);
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, is_hall_ticket_released: nextStatus } : s));
+    } catch (err) {
+      toast.error(err.message || 'Failed to toggle status.');
     }
   };
 
@@ -117,8 +187,36 @@ export default function HallTicketsPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Hall Ticket Generation</h2>
-        <p>Search students and generate hall tickets for published exam schedules</p>
+        <h2>Hall Ticket Generation & Release</h2>
+        <p>Bulk release hall tickets to departments/semesters, toggle individual status, and preview timetables</p>
+      </div>
+
+      {/* Bulk Release Panel */}
+      <div className="card" style={{ marginBottom: '20px' }}>
+        <div className="card-header">
+          <div className="card-title">Bulk Release Hall Tickets</div>
+          <div className="card-subtitle">Select a department and/or semester to release/revoke hall tickets in bulk</div>
+        </div>
+        <div className="card-body">
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select className="form-control" style={{ minWidth: '220px', flex: 1 }} value={bulkDept} onChange={e => { setBulkDept(e.target.value); setBulkSem(''); }}>
+              <option value="">All Departments</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
+            </select>
+            <select className="form-control" style={{ minWidth: '220px', flex: 1 }} value={bulkSem} onChange={e => setBulkSem(e.target.value)}>
+              <option value="">All Semesters</option>
+              {semesters.map(s => <option key={s.id} value={s.id}>Semester {s.semester_number} ({s.academic_year})</option>)}
+            </select>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-primary" onClick={() => handleBulkRelease(true)} disabled={releasing} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle size={16} /> Release Bulk
+              </button>
+              <button className="btn btn-secondary" onClick={() => handleBulkRelease(false)} disabled={releasing} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <XCircle size={16} /> Revoke Bulk
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
@@ -148,8 +246,20 @@ export default function HallTicketsPage() {
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-              <span className="spinner"></span>
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="skeleton-card" style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ width: '60%' }}>
+                    <div className="skeleton skeleton-title" style={{ width: '120px', height: '14px', marginBottom: '6px' }}></div>
+                    <div className="skeleton skeleton-text" style={{ width: '80%' }}></div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="skeleton skeleton-badge" style={{ width: '80px' }}></div>
+                    <div className="skeleton skeleton-button" style={{ width: '60px' }}></div>
+                    <div className="skeleton skeleton-button" style={{ width: '60px' }}></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : students.length > 0 ? (
             <div style={{ marginTop: '16px' }}>
@@ -163,10 +273,22 @@ export default function HallTicketsPage() {
                     <div>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{s.full_name}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {s.register_number} &nbsp;•&nbsp; {s.department_name} &nbsp;•&nbsp; Semester {s.semester_number}
+                        {s.register_number} &nbsp;•&nbsp; {s.dept_code || s.department_name} &nbsp;•&nbsp; Semester {s.semester_number}
                       </div>
                     </div>
-                    <button className="btn btn-primary btn-sm" onClick={() => loadTicket(s)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Ticket size={14} /> View</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className={`badge ${s.is_hall_ticket_released ? 'badge-success' : 'badge-gray'}`} style={{ fontSize: '11px', fontWeight: '600' }}>
+                        {s.is_hall_ticket_released ? 'Released' : 'Not Released'}
+                      </span>
+                      <button 
+                        className={`btn ${s.is_hall_ticket_released ? 'btn-secondary' : 'btn-primary'} btn-sm`} 
+                        onClick={() => handleToggleIndividual(s.id, s.is_hall_ticket_released)}
+                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                      >
+                        {s.is_hall_ticket_released ? 'Revoke' : 'Release'}
+                      </button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => loadTicket(s)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Ticket size={14} /> View</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -180,7 +302,17 @@ export default function HallTicketsPage() {
       </div>
 
       {/* Hall Ticket Preview */}
-      {loadingTicket && <div className="loading-center"><span className="spinner"></span></div>}
+      {loadingTicket && (
+        <div className="skeleton-card" style={{ marginTop: '24px', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+          <div className="skeleton skeleton-avatar" style={{ width: '80px', height: '80px' }}></div>
+          <div className="skeleton skeleton-title" style={{ width: '150px', height: '20px' }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '60%', height: '14px' }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '40%', height: '14px' }}></div>
+          <div style={{ width: '100%', height: '1px', background: 'var(--border-color)', margin: '20px 0' }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '90%', height: '12px' }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '90%', height: '12px' }}></div>
+        </div>
+      )}
 
       {hallTicket && (
         <div className="card" style={{ marginTop: '24px' }}>
@@ -360,6 +492,23 @@ export default function HallTicketsPage() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
             </div>
           </div>
         </div>

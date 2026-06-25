@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getStudentProfile } from '../../api/admin';
 import { BookOpen, User, Calendar, Award } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 export default function StudentDashboard() {
   const [profile, setProfile] = useState(null);
@@ -22,8 +23,12 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-        <span className="spinner"></span>
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>Student Dashboard</h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>Welcome back to your academic portal.</p>
+        </div>
+        <SkeletonLoader type="dashboard" />
       </div>
     );
   }

@@ -15,6 +15,11 @@ const pool = new Pool({
   }
 });
 
+// Database migrations
+pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS is_hall_ticket_released BOOLEAN DEFAULT FALSE;')
+  .then(() => console.log('Database migrated successfully: Checked is_hall_ticket_released column.'))
+  .catch(err => console.error('Database migration failed:', err));
+
 module.exports = {
   query: (text, params) => pool.query(text, params),
   pool

@@ -17,8 +17,49 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) return (
-    <div className="loading-center">
-      <span className="spinner" style={{ width:'40px', height:'40px', borderWidth:'3px' }}></span>
+    <div>
+      <div className="page-header">
+        <h2>Dashboard</h2>
+        <p>Overview of the College system</p>
+      </div>
+
+      {/* Stats Grid Skeleton */}
+      <div className="stats-grid">
+        {[...Array(8)].map((_, idx) => (
+          <div key={idx} className="stat-card">
+            <div className="skeleton skeleton-avatar" style={{ width: '40px', height: '40px' }}></div>
+            <div className="stat-info" style={{ width: '60%' }}>
+              <div className="skeleton skeleton-title" style={{ width: '40px', height: '24px', marginBottom: '8px' }}></div>
+              <div className="skeleton skeleton-text" style={{ width: '80%' }}></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Row Skeleton */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'24px' }}>
+        <div className="card">
+          <div className="card-header">
+            <div className="skeleton skeleton-title" style={{ width: '120px' }}></div>
+          </div>
+          <div className="card-body" style={{ display:'flex', alignItems:'center', justifyContent:'center', height: '200px' }}>
+            <div className="skeleton skeleton-avatar" style={{ width: '120px', height: '120px' }}></div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <div className="skeleton skeleton-title" style={{ width: '100px' }}></div>
+          </div>
+          <div className="card-body">
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+              {[...Array(6)].map((_, idx) => (
+                <div key={idx} className="skeleton skeleton-button" style={{ width: '100%', height: '44px' }}></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 

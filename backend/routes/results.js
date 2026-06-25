@@ -128,4 +128,49 @@ router.get('/hall-ticket/:student_id', async (req, res) => {
   }
 });
 
+// POST /api/admin/results/hall-ticket/release
+router.post('/hall-ticket/release', async (req, res) => {
+  const { department_id, semester_id, is_released } = req.body;
+  try {
+    let query = 'UPDATE students SET is_hall_ticket_released = $1 WHERE 1=1';
+    const params = [is_released];
+    let idx = 2;
+    if (department_id) {
+      query += ` AND department_id = $${idx}`;
+      params.push(department_id);
+      idx++;
+    }
+    if (semester_id) {
+      query += ` AND semester_id = $${idx}`;
+      params.push(semester_id);
+      idx++;
+    }
+    await db.query(query, params);
+    
+    // Log audit log
+    await logAudit(req.admin.id, is_released ? 'RELEASE_HALL_TICKETS_BULK' : 'REVOKE_HALL_TICKETS_BULK', 'students', null, `Bulk update to ${is_released}. Dept: ${department_id || 'All'}, Sem: ${semester_id || 'All'}`);
+
+    res.json({ success: true, message: `Hall tickets ${is_released ? 'released' : 'revoked'} successfully.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update hall tickets.' });
+  }
+});
+
+// POST /api/admin/results/hall-ticket/:student_id/toggle
+router.post('/hall-ticket/:student_id/toggle', async (req, res) => {
+  const { is_released } = req.body;
+  try {
+    await db.query('UPDATE students SET is_hall_ticket_released = $1 WHERE id = $2', [is_released, req.params.student_id]);
+    
+    // Log audit log
+    await logAudit(req.admin.id, is_released ? 'RELEASE_HALL_TICKET' : 'REVOKE_HALL_TICKET', 'students', req.params.student_id, `Individual update to ${is_released}`);
+
+    res.json({ success: true, message: `Hall ticket ${is_released ? 'released' : 'revoked'} for student.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to toggle hall ticket.' });
+  }
+});
+
 module.exports = router;

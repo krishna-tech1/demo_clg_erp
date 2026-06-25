@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { getAuditLogs } from '../../api/admin';
 import { ClipboardList, Calendar, Lock, Edit, Search, RefreshCw } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const ACTION_COLORS = {
   'LOGIN': 'badge-info',
@@ -111,7 +112,7 @@ export default function AuditPage() {
         </div>
 
         {loading ? (
-          <div className="loading-center"><span className="spinner"></span></div>
+          <SkeletonLoader type="table" count={5} />
         ) : filteredLogs.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><Search size={32} /></div>

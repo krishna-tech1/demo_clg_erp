@@ -12,6 +12,14 @@ export default function ExamSchedulePage() {
   const [form, setForm] = useState({ subject_id:'', exam_date:'', session:'FN', start_time:'', end_time:'', venue:'' });
   const [saving, setSaving] = useState(false);
 
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
   const load = () => {
     setLoading(true);
     Promise.all([getExamSchedules(), getSubjects()])
@@ -36,9 +44,21 @@ export default function ExamSchedulePage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this exam schedule?')) return;
-    try { await deleteExamSchedule(id); toast.success('Deleted.'); load(); }
-    catch (err) { toast.error(err.message); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Exam Schedule',
+      message: 'Delete this exam schedule?',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteExamSchedule(id);
+          toast.success('Deleted.');
+          load();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   const handlePublish = async (id) => {
@@ -72,7 +92,49 @@ export default function ExamSchedulePage() {
       </div>
 
       {loading ? (
-        <div className="loading-center"><span className="spinner"></span></div>
+        <div className="card" style={{ marginBottom:'16px' }}>
+          <div className="card-header">
+            <div>
+              <div className="skeleton skeleton-title" style={{ width: '220px', height: '22px' }}></div>
+              <div className="skeleton skeleton-text" style={{ width: '120px', marginTop: '6px' }}></div>
+            </div>
+          </div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject Code</th>
+                  <th>Subject Name</th>
+                  <th>Session</th>
+                  <th>Time</th>
+                  <th>Venue</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(3)].map((_, idx) => (
+                  <tr key={idx}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '140px' }}></div></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '40px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '70px' }}></div></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '60px' }}></div></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px' }}></div></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : schedules.length === 0 ? (
         <div className="card">
           <div className="empty-state">
@@ -185,6 +247,23 @@ export default function ExamSchedulePage() {
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : (editing ? 'Update' : 'Schedule')}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
+            </div>
           </div>
         </div>
       )}

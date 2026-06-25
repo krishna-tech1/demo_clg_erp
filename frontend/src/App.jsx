@@ -35,14 +35,29 @@ import StudentInternalMarks from './pages/student/StudentInternalMarks';
 
 import './index.css';
 
+import SkeletonLoader from './components/SkeletonLoader';
+
 // Role-based Protected Route Wrapper
 function ProtectedRoute({ children, allowedRole }) {
   const { isAuthenticated, user, loading } = useAuth();
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'var(--bg-app)' }}>
-      <div style={{ textAlign:'center' }}>
-        <span className="spinner" style={{ width:'40px', height:'40px', borderWidth:'3px' }}></span>
-        <p style={{ marginTop:'16px', color:'var(--text-tertiary)', fontSize:'14px' }}>Loading...</p>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-app)' }}>
+      <div style={{ display: 'flex', flex: 1 }}>
+        <div className="no-print" style={{ width: '260px', background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-color)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="skeleton skeleton-title" style={{ width: '140px', height: '24px', marginBottom: '10px' }}></div>
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="skeleton skeleton-text" style={{ width: '85%', height: '18px' }}></div>
+          ))}
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: '64px', background: 'var(--bg-header)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+            <div className="skeleton skeleton-avatar" style={{ marginLeft: 'auto' }}></div>
+          </div>
+          <div style={{ padding: '24px', flex: 1 }}>
+            <div className="skeleton skeleton-title" style={{ width: '200px', height: '24px', marginBottom: '24px' }}></div>
+            <SkeletonLoader type="dashboard" />
+          </div>
+        </div>
       </div>
     </div>
   );

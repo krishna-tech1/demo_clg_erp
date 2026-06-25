@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { BarChart as BarChartIcon, Edit, Building2, FileText, ClipboardList, Printer } from 'lucide-react';
 import { exportToExcel } from '../../utils/excelHelper';
 import { toast } from 'react-hot-toast';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const REPORT_TYPES = [
   { id: 'pass-percentage', label: 'Pass Percentage', icon: BarChartIcon, desc: 'Subject-wise pass/fail analysis' },
@@ -140,7 +141,7 @@ export default function ReportsPage() {
       </div>
 
       {loading ? (
-        <div className="loading-center"><span className="spinner"></span></div>
+        <SkeletonLoader type="table" count={5} />
       ) : (
         <>
           {/* Bar Chart for Pass Percentage */}

@@ -1112,3 +1112,82 @@ select.form-control {
 .text-sm { font-size: 12px; }
 .text-xs { font-size: 11px; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================
+   Skeleton Shimmer Loader Styles
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface-2) 25%, var(--border-light) 50%, var(--bg-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.skeleton-text {
+  height: 12px;
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 150px;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-avatar {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+}
+
+.skeleton-badge {
+  height: 20px;
+  width: 80px;
+  border-radius: var(--radius-full);
+}
+
+.skeleton-button {
+  height: 32px;
+  width: 70px;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   Custom Scrollbar Styles (Theme-Aware)
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--bg-app);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-app);
+}
+
+

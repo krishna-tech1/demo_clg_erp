@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getStudentInternalMarks } from '../../api/admin';
 import { ClipboardCheck, AlertTriangle } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 export default function StudentInternalMarks() {
   const [marks, setMarks] = useState([]);
@@ -20,8 +21,12 @@ export default function StudentInternalMarks() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-        <span className="spinner"></span>
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>Internal Marks</h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>View model exam marks and continuous assessment scoring.</p>
+        </div>
+        <SkeletonLoader type="table" count={5} />
       </div>
     );
   }

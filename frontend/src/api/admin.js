@@ -193,6 +193,13 @@ export const saveFacultyCoPo = (data) =>
 export const getFacultyObeReports = () =>
   fetch(`${BASE_URL}/faculty/obe/attainment`, { headers: authHeaders() }).then(handleResponse);
 
+export const releaseHallTickets = (data) =>
+  fetch(`${BASE_URL}/admin/results/hall-ticket/release`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+export const toggleStudentHallTicket = (studentId, data) =>
+  fetch(`${BASE_URL}/admin/results/hall-ticket/${studentId}/toggle`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }).then(handleResponse);
+
+
 // Student Portal API calls
 export const getStudentProfile = () =>
   fetch(`${BASE_URL}/student/profile`, { headers: authHeaders() }).then(handleResponse);

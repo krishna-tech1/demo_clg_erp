@@ -25,22 +25,56 @@ export default function FacultyPage() {
   const [subjectToAssign, setSubjectToAssign] = useState('');
   const [subjectsLoading, setSubjectsLoading] = useState(false);
 
-  const load = useCallback(() => {
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  const load = useCallback((isInitial = false) => {
     setLoading(true);
     const params = { sort_by: sortBy, sort_order: sortOrder };
     if (search) params.search = search;
     if (filterDept) params.department_id = filterDept;
-    getFaculty(params)
-      .then(d => setFaculty(d.faculty))
-      .catch(() => toast.error('Failed to load faculty.'))
-      .finally(() => setLoading(false));
-  }, [search, filterDept, sortBy, sortOrder]);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { 
-    getDepartments().then(d => setDepartments(d.departments)); 
-    getSubjects().then(d => setAllSubjects(d.subjects || []));
+    if (isInitial) {
+      Promise.all([
+        getFaculty(params),
+        getDepartments(),
+        getSubjects()
+      ])
+        .then(([facData, deptsData, subsData]) => {
+          setFaculty(facData.faculty);
+          setDepartments(deptsData.departments);
+          setAllSubjects(subsData.subjects || []);
+        })
+        .catch(() => toast.error('Failed to load initial data.'))
+        .finally(() => {
+          setLoading(false);
+          setIsFirstLoad(false);
+        });
+    } else {
+      if (isFirstLoad) return;
+      getFaculty(params)
+        .then(d => setFaculty(d.faculty))
+        .catch(() => toast.error('Failed to load faculty.'))
+        .finally(() => setLoading(false));
+    }
+  }, [search, filterDept, sortBy, sortOrder, isFirstLoad]);
+
+  useEffect(() => {
+    load(true);
   }, []);
+
+  useEffect(() => {
+    if (!isFirstLoad) {
+      load(false);
+    }
+  }, [load, isFirstLoad]);
 
   const openManageSubjects = async (f) => {
     setSelectedFaculty(f);
@@ -76,17 +110,24 @@ export default function FacultyPage() {
   };
 
   const handleUnassignSubject = async (subjectId) => {
-    if (!window.confirm('Are you sure you want to unassign this subject?')) return;
-    try {
-      await unassignSubjectFromFaculty(selectedFaculty.id, subjectId);
-      toast.success('Subject unassigned successfully.');
-      const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
-      setAssignedSubjects(data.subjects || []);
-      const allSubData = await getSubjects();
-      setAllSubjects(allSubData.subjects || []);
-    } catch (err) {
-      toast.error(err.message || 'Failed to unassign subject.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Unassign Subject',
+      message: 'Are you sure you want to unassign this subject?',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await unassignSubjectFromFaculty(selectedFaculty.id, subjectId);
+          toast.success('Subject unassigned successfully.');
+          const data = await getFacultySubjectsForAdmin(selectedFaculty.id);
+          setAssignedSubjects(data.subjects || []);
+          const allSubData = await getSubjects();
+          setAllSubjects(allSubData.subjects || []);
+        } catch (err) {
+          toast.error(err.message || 'Failed to unassign subject.');
+        }
+      }
+    });
   };
 
   const openAdd = () => {
@@ -122,14 +163,21 @@ export default function FacultyPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete faculty "${name}"?`)) return;
-    try {
-      await deleteFaculty(id);
-      toast.success('Faculty deleted.');
-      load();
-    } catch (err) {
-      toast.error(err.message);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Faculty',
+      message: `Delete faculty "${name}"?`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteFaculty(id);
+          toast.success('Faculty deleted.');
+          load();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   const handleExport = () => {
@@ -242,7 +290,45 @@ export default function FacultyPage() {
         </div>
 
         {loading ? (
-          <div className="loading-center"><span className="spinner"></span></div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Faculty ID</th>
+                  <th>Name</th>
+                  <th>Designation</th>
+                  <th>Department</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(6)].map((_, idx) => (
+                  <tr key={idx}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '20px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }}></div></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="skeleton skeleton-avatar"></div>
+                        <div className="skeleton skeleton-text" style={{ width: '120px' }}></div>
+                      </div>
+                    </td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '100px' }}></div></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '60px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '160px' }}></div></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                        <div className="skeleton skeleton-button" style={{ width: '80px' }}></div>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : faculty.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><Users size={32} /></div>
@@ -426,6 +512,23 @@ export default function FacultyPage() {
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={() => setShowSubjectsModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Printer, AlertTriangle, User, QrCode } from 'lucide-react';
 export default function StudentHallTicket() {
   const [ticketData, setTicketData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getStudentHallTicket()
@@ -14,6 +15,7 @@ export default function StudentHallTicket() {
       })
       .catch(err => {
         console.error(err);
+        setError(err.message || 'Failed to load hall ticket.');
         setLoading(false);
       });
   }, []);
@@ -26,6 +28,18 @@ export default function StudentHallTicket() {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
         <span className="spinner"></span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card" style={{ padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginTop: '20px' }}>
+        <AlertTriangle size={48} style={{ color: 'var(--brand-danger)' }} />
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>Access Restricted</h3>
+        <p style={{ color: 'var(--text-tertiary)', maxWidth: '400px' }}>
+          {error}
+        </p>
       </div>
     );
   }

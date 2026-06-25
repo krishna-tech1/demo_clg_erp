@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { getSubjects, getStudents, getInternalMarks, saveInternalMarks, getExternalMarks, saveExternalMarks, computeResults } from '../../api/admin';
 import { Save, Settings, Info, Edit, GraduationCap, Download, Upload } from 'lucide-react';
 import { exportToExcel, importFromExcel } from '../../utils/excelHelper';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const TABS = ['Internal Marks', 'External Marks'];
 
@@ -253,7 +254,7 @@ export default function MarksPage() {
           </div>
         </div>
       ) : loading ? (
-        <div className="loading-center"><span className="spinner"></span></div>
+        <SkeletonLoader type="table" count={5} />
       ) : students.length === 0 ? (
         <div className="card">
           <div className="empty-state">

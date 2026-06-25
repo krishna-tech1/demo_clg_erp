@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFacultySubjects } from '../../api/admin';
 import { useAuth } from '../../context/AuthContext';
 import { BookOpen, Award, Users, ArrowRight } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -24,8 +25,12 @@ export default function FacultyDashboard() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-        <span className="spinner"></span>
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>Faculty Portal</h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>Welcome to the continuous assessment portal.</p>
+        </div>
+        <SkeletonLoader type="dashboard" />
       </div>
     );
   }

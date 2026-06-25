@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { getResults, publishResults, getResultsSummary, getSubjects, getSemesters } from '../../api/admin';
 import { Send, ClipboardList, CheckCircle, XCircle, BarChart2, Download } from 'lucide-react';
 import { exportToExcel } from '../../utils/excelHelper';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const GRADE_COLORS = { 'O':'badge-success','A+':'badge-success','A':'badge-info','B+':'badge-info','B':'badge-purple','RA':'badge-warning','U':'badge-danger' };
 
@@ -19,6 +20,14 @@ export default function ResultsPage() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
+
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
 
   useEffect(() => {
     getSubjects().then(d => setSubjects(d.subjects));
@@ -47,20 +56,27 @@ export default function ResultsPage() {
   };
 
   const handlePublish = async () => {
-    if (!window.confirm('Publish all pending results? This will make them visible to students.')) return;
-    setPublishing(true);
-    try {
-      const params = {};
-      if (filterSubject) params.subject_id = filterSubject;
-      if (filterSem) params.semester_id = filterSem;
-      const res = await publishResults(params);
-      toast.success(res.message);
-      loadResults();
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setPublishing(false);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Publish Results',
+      message: 'Publish all pending results? This will make them visible to students.',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        setPublishing(true);
+        try {
+          const params = {};
+          if (filterSubject) params.subject_id = filterSubject;
+          if (filterSem) params.semester_id = filterSem;
+          const res = await publishResults(params);
+          toast.success(res.message);
+          loadResults();
+        } catch (err) {
+          toast.error(err.message);
+        } finally {
+          setPublishing(false);
+        }
+      }
+    });
   };
 
   const handleExport = () => {
@@ -174,7 +190,7 @@ export default function ResultsPage() {
             </div>
           </div>
           {loading ? (
-            <div className="loading-center"><span className="spinner"></span></div>
+            <SkeletonLoader type="table" count={5} />
           ) : results.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon"><ClipboardList size={32} /></div>
@@ -263,6 +279,23 @@ export default function ResultsPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

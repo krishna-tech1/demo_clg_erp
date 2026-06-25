@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getSubjects, getCourseOutcomes, saveCourseOutcome, getCoPo, saveCoPo, getObeAttainment } from '../../api/admin';
 import { FlaskConical, Save } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const PO_LABELS = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
 const PO_DESCRIPTIONS = {
@@ -100,7 +101,7 @@ export default function OBEPage() {
           </div>
         </div>
       ) : loading ? (
-        <div className="loading-center"><span className="spinner"></span></div>
+        <SkeletonLoader type="obe" />
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:'20px' }}>
           {/* CO Definition */}

@@ -21,21 +21,55 @@ export default function StudentsPage() {
   const [total, setTotal] = useState(0);
   const LIMIT = 15;
 
-  const load = useCallback(() => {
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Custom Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  const load = useCallback((isInitial = false) => {
     setLoading(true);
     const params = { page, limit: LIMIT, sort_by: sortBy, sort_order: sortOrder };
     if (search) params.search = search;
     if (filterDept) params.department_id = filterDept;
-    getStudents(params)
-      .then(d => { setStudents(d.students); setTotal(d.total); })
-      .catch(() => toast.error('Failed to load students.'))
-      .finally(() => setLoading(false));
-  }, [search, filterDept, sortBy, sortOrder, page]);
 
-  useEffect(() => { load(); }, [load]);
+    if (isInitial) {
+      Promise.all([
+        getStudents(params),
+        getDepartments()
+      ])
+        .then(([studentsData, deptsData]) => {
+          setStudents(studentsData.students);
+          setTotal(studentsData.total);
+          setDepartments(deptsData.departments);
+        })
+        .catch(() => toast.error('Failed to load initial data.'))
+        .finally(() => {
+          setLoading(false);
+          setIsFirstLoad(false);
+        });
+    } else {
+      if (isFirstLoad) return;
+      getStudents(params)
+        .then(d => { setStudents(d.students); setTotal(d.total); })
+        .catch(() => toast.error('Failed to load students.'))
+        .finally(() => setLoading(false));
+    }
+  }, [search, filterDept, sortBy, sortOrder, page, isFirstLoad]);
+
   useEffect(() => {
-    getDepartments().then(d => setDepartments(d.departments));
+    load(true);
   }, []);
+
+  useEffect(() => {
+    if (!isFirstLoad) {
+      load(false);
+    }
+  }, [load, isFirstLoad]);
   useEffect(() => {
     if (form.department_id) getSemesters({ department_id: form.department_id }).then(d => setSemesters(d.semesters));
   }, [form.department_id]);
@@ -73,14 +107,21 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete student "${name}"? This cannot be undone.`)) return;
-    try {
-      await deleteStudent(id);
-      toast.success('Student deleted.');
-      load();
-    } catch (err) {
-      toast.error(err.message);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Student',
+      message: `Delete student "${name}"? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteStudent(id);
+          toast.success('Student deleted.');
+          load();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
   };
 
   const handleExport = () => {
@@ -205,7 +246,41 @@ export default function StudentsPage() {
         </div>
 
         {loading ? (
-          <div className="loading-center"><span className="spinner"></span></div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Register No.</th>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>Semester</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(6)].map((_, idx) => (
+                  <tr key={idx}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '20px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '85px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '130px' }}></div></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '60px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '45px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }}></div></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                        <div className="skeleton skeleton-button" style={{ width: '32px' }}></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : students.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><GraduationCap size={32} /></div>
@@ -325,6 +400,23 @@ export default function StudentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{confirmModal.title}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmModal.onConfirm}>Confirm</button>
+            </div>
           </div>
         </div>
       )}

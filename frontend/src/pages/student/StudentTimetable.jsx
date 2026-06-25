@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { getStudentHallTicket } from '../../api/admin';
 import { Calendar, Clock, MapPin, BookOpen, FileText } from 'lucide-react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 export default function StudentTimetable() {
   const [timetableData, setTimetableData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getStudentHallTicket()
@@ -14,14 +16,35 @@ export default function StudentTimetable() {
       })
       .catch(err => {
         console.error(err);
+        setError(err.message || 'Failed to load timetable.');
         setLoading(false);
       });
   }, []);
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-        <span className="spinner"></span>
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>
+            Semester Exam Timetable
+          </h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>
+            View your upcoming semester exam schedule. All details are synchronized with the university controller office.
+          </p>
+        </div>
+        <SkeletonLoader type="timetable" count={4} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card" style={{ padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+        <Calendar size={48} style={{ color: 'var(--brand-danger)' }} />
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>Timetable Unavailable</h3>
+        <p style={{ color: 'var(--text-tertiary)', maxWidth: '400px' }}>
+          {error}
+        </p>
       </div>
     );
   }

@@ -8,6 +8,7 @@ import {
   saveFacultyCoPo, 
   getFacultyObeReports 
 } from '../../api/admin';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { toast } from 'react-hot-toast';
 import { Save, HelpCircle, FileText } from 'lucide-react';
 
@@ -204,9 +205,7 @@ export default function FacultyObe() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <span className="spinner"></span>
-        </div>
+        <SkeletonLoader type="table" count={5} />
       ) : selectedSubjectId ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
